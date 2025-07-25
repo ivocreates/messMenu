@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Mess Menu Rater{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="h2 mb-4">
+            <i class="fas fa-chart-bar"></i> Analytics Dashboard
+        </h1>
+    </div>
+</div>
+
+<!-- Top Rated Items -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-trophy"></i> Top Rated Items
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if top_items %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Item Name</th>
+                                <th>Average Rating</th>
+                                <th>Total Ratings</th>
+                                <th>Rating Stars</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in top_items %}
+                            <tr>
+                                <td>
+                                    {% if loop.index == 1 %}
+                                    <i class="fas fa-trophy text-warning"></i>
+                                    {% elif loop.index == 2 %}
+                                    <i class="fas fa-medal text-secondary"></i>
+                                    {% elif loop.index == 3 %}
+                                    <i class="fas fa-award text-warning"></i>
+                                    {% else %}
+                                    {{ loop.index }}
+                                    {% endif %}
+                                </td>
+                                <td><strong>{{ item.item_name }}</strong></td>
+                                <td>{{ "%.2f"|format(item.avg_rating) }}</td>
+                                <td>{{ item.rating_count }}</td>
+                                <td>
+                                    <div class="stars">
+                                        {% for i in range(1, 6) %}
+                                        <i class="fas fa-star {% if i <= item.avg_rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No ratings data available yet. Items need at least 3 ratings to appear here.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rating Distribution -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie"></i> Rating Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if rating_distribution %}
+                <canvas id="ratingChart" width="400" height="400"></canvas>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No rating data available yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i> Rating Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if rating_distribution %}
+                {% set total_ratings = rating_distribution|sum(attribute='count') %}
+                <ul class="list-group list-group-flush">
+                    {% for rating in rating_distribution %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="stars">
+                                {% for i in range(1, 6) %}
+                                <i class="fas fa-star {% if i <= rating.rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary rounded-pill">{{ rating.count }}</span>
+                            <small class="text-muted">({{ "%.1f"|format((rating.count / total_ratings * 100)) }}%)</small>
+                        </div>
+                    </li>
+                    {% endfor %}
+                    <li class="list-group-item">
+                        <strong>Total Ratings: {{ total_ratings }}</strong>
+                    </li>
+                </ul>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No rating statistics available yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{% if rating_distribution %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Rating Distribution Chart
+const ctx = document.getElementById('ratingChart').getContext('2d');
+const ratingData = JSON.parse('{{ rating_distribution|tojson | safe }}');
+
+const labels = ratingData.map(item => `${item.rating} Star${item.rating > 1 ? 's' : ''}`);
+const data = ratingData.map(item => item.count);
+const colors = [
+    '#dc3545', // 1 star - red
+    '#fd7e14', // 2 stars - orange
+    '#ffc107', // 3 stars - yellow
+    '#28a745', // 4 stars - green
+    '#007bff'  // 5 stars - blue
+];
+
+new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: labels,
+        datasets: [{
+            data: data,
+            backgroundColor: colors.slice(0, data.length),
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            },
+            title: {
+                display: true,
+                text: 'Rating Distribution'
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

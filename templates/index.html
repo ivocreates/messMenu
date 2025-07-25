@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Mess Menu Rater{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2">
+                <i class="fas fa-calendar-day"></i> Today's Menu
+                <small class="text-muted">{{ today }}</small>
+            </h1>
+            {% if session.user_type == 'student' %}
+            <div class="text-muted">
+                <i class="fas fa-star text-warning"></i> Rate items to help improve our food quality!
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if menu_items %}
+    <!-- Group menu items by meal type -->
+    {% set meal_types = {'breakfast': 'Breakfast', 'lunch': 'Lunch', 'dinner': 'Dinner', 'snacks': 'Snacks'} %}
+    
+    {% for meal_type, meal_label in meal_types.items() %}
+        {% set meal_items = menu_items|selectattr('meal_type', 'equalto', meal_type)|list %}
+        {% if meal_items %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="h4 mb-3">
+                    <i class="fas fa-utensils text-primary"></i> {{ meal_label }}
+                </h3>
+                <div class="row">
+                    {% for item in meal_items %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 menu-item-card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ item.item_name }}</h5>
+                                <p class="card-text text-muted">{{ item.description or 'No description available' }}</p>
+                                
+                                <!-- Price -->
+                                <div class="mb-2">
+                                    <span class="badge bg-success">₹{{ "%.2f"|format(item.price) }}</span>
+                                </div>
+                                
+                                <!-- Rating Display -->
+                                <div class="rating-display mb-3">
+                                    <div class="stars">
+                                        {% for i in range(1, 6) %}
+                                        <i class="fas fa-star {% if i <= item.avg_rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                        {% endfor %}
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ "%.1f"|format(item.avg_rating) }}/5 
+                                        ({{ item.rating_count }} {% if item.rating_count == 1 %}rating{% else %}ratings{% endif %})
+                                    </small>
+                                </div>
+                                
+                                {% if session.user_type == 'student' %}
+                                <!-- Rating Form -->
+                                <div class="rating-form">
+                                    <label class="form-label small">Rate this item:</label>
+                                    <div class="rating-stars mb-2" data-item-id="{{ item.id }}">
+                                        {% for i in range(1, 6) %}
+                                        <i class="fas fa-star rating-star" data-rating="{{ i }}"></i>
+                                        {% endfor %}
+                                    </div>
+                                    <textarea class="form-control form-control-sm mb-2" 
+                                             placeholder="Optional comment..." 
+                                             id="comment-{{ item.id }}" 
+                                             rows="2"></textarea>
+                                    <button class="btn btn-primary btn-sm submit-rating" 
+                                           data-item-id="{{ item.id }}">
+                                        <i class="fas fa-paper-plane"></i> Submit Rating
+                                    </button>
+                                </div>
+                                {% endif %}
+                                
+                                {% if session.user_type == 'student' %}
+                                <!-- Order Button -->
+                                <div class="mt-2">
+                                    <button class="btn btn-outline-success btn-sm add-to-order" 
+                                           data-item-id="{{ item.id }}" 
+                                           data-item-name="{{ item.item_name }}" 
+                                           data-price="{{ item.price }}">
+                                        <i class="fas fa-plus"></i> Add to Order
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+    
+    {% if session.user_type == 'student' %}
+    <!-- Order Summary -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card d-none" id="order-summary">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shopping-cart"></i> Your Order
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="order-items"></div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>Total: ₹<span id="order-total">0.00</span></strong>
+                        <div>
+                            <button class="btn btn-outline-secondary me-2" id="clear-order">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                            <button class="btn btn-success" id="place-order">
+                                <i class="fas fa-check"></i> Place Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle"></i>
+                No menu items available for today. 
+                {% if session.user_type == 'admin' %}
+                <a href="{{ url_for('admin_dashboard') }}" class="alert-link">Add some items</a> to get started.
+                {% else %}
+                Please check back later.
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Rating functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Rating stars interaction
+    const ratingStars = document.querySelectorAll('.rating-stars');
+    
+    ratingStars.forEach(starsContainer => {
+        const stars = starsContainer.querySelectorAll('.rating-star');
+        let selectedRating = 0;
+        
+        stars.forEach((star, index) => {
+            star.addEventListener('mouseenter', () => {
+                highlightStars(stars, index + 1);
+            });
+            
+            star.addEventListener('mouseleave', () => {
+                highlightStars(stars, selectedRating);
+            });
+            
+            star.addEventListener('click', () => {
+                selectedRating = index + 1;
+                highlightStars(stars, selectedRating);
+                starsContainer.dataset.selectedRating = selectedRating;
+            });
+        });
+    });
+    
+    // Submit rating
+    document.querySelectorAll('.submit-rating').forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.dataset.itemId;
+            const starsContainer = document.querySelector(`.rating-stars[data-item-id="${itemId}"]`);
+            const rating = starsContainer.dataset.selectedRating;
+            const comment = document.getElementById(`comment-${itemId}`).value;
+            
+            if (!rating) {
+                alert('Please select a rating!');
+                return;
+            }
+            
+            submitRating(itemId, rating, comment);
+        });
+    });
+    
+    // Order functionality
+    let orderItems = [];
+    
+    document.querySelectorAll('.add-to-order').forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.dataset.itemId;
+            const itemName = this.dataset.itemName;
+            const price = parseFloat(this.dataset.price);
+            
+            addToOrder(itemId, itemName, price);
+        });
+    });
+    
+    document.getElementById('clear-order')?.addEventListener('click', clearOrder);
+    document.getElementById('place-order')?.addEventListener('click', placeOrder);
+    
+    function highlightStars(stars, rating) {
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('text-warning');
+                star.classList.remove('text-muted');
+            } else {
+                star.classList.add('text-muted');
+                star.classList.remove('text-warning');
+            }
+        });
+    }
+    
+    function submitRating(itemId, rating, comment) {
+        fetch('/rate_item', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                menu_item_id: itemId,
+                rating: rating,
+                comment: comment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload(); // Reload to show updated ratings
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while submitting your rating.');
+        });
+    }
+    
+    function addToOrder(itemId, itemName, price) {
+        const existingItem = orderItems.find(item => item.id === itemId);
+        
+        if (existingItem) {
+            existingItem.quantity += 1;
+        } else {
+            orderItems.push({
+                id: itemId,
+                name: itemName,
+                price: price,
+                quantity: 1
+            });
+        }
+        
+        updateOrderDisplay();
+    }
+    
+    function updateOrderDisplay() {
+        const orderSummary = document.getElementById('order-summary');
+        const orderItemsContainer = document.getElementById('order-items');
+        const orderTotal = document.getElementById('order-total');
+        
+        if (orderItems.length === 0) {
+            orderSummary.style.display = 'none';
+            return;
+        }
+        
+        orderSummary.style.display = 'block';
+        
+        let html = '';
+        let total = 0;
+        
+        orderItems.forEach(item => {
+            const itemTotal = item.price * item.quantity;
+            total += itemTotal;
+            
+            html += `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small>₹${item.price.toFixed(2)} × ${item.quantity}</small>
+                    </div>
+                    <div>
+                        <span class="me-2">₹${itemTotal.toFixed(2)}</span>
+                        <button class="btn btn-sm btn-outline-danger" 
+                               onclick="removeFromOrder('${item.id}')">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        orderItemsContainer.innerHTML = html;
+        orderTotal.textContent = total.toFixed(2);
+    }
+    
+    window.removeFromOrder = function(itemId) {
+        const itemIndex = orderItems.findIndex(item => item.id === itemId);
+        if (itemIndex > -1) {
+            if (orderItems[itemIndex].quantity > 1) {
+                orderItems[itemIndex].quantity -= 1;
+            } else {
+                orderItems.splice(itemIndex, 1);
+            }
+            updateOrderDisplay();
+        }
+    };
+    
+    function clearOrder() {
+        orderItems = [];
+        updateOrderDisplay();
+    }
+    
+    function placeOrder() {
+        if (orderItems.length === 0) {
+            alert('Your order is empty!');
+            return;
+        }
+        
+        // Here you would typically send the order to the server
+        alert('Order placed successfully! (Feature in development)');
+        clearOrder();
+    }
+});
+</script>
+{% endblock %}
