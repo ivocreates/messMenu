@@ -1,316 +1,242 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import sqlite3
-from datetime import datetime, date
-import os
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta
+import calendar
+from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = 'mess_menu_rater_secret_key_2025'
+app.secret_key = 'your-secret-key-change-this-in-production'
 
-# Database configuration
-DATABASE = 'database/mess_menu.db'
-
+# Database helper functions
 def get_db_connection():
-    """Get database connection"""
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect('database/mess_menu.db')
     conn.row_factory = sqlite3.Row
     return conn
 
-def init_db():
-    """Initialize database with tables"""
-    if not os.path.exists('database'):
-        os.makedirs('database')
-    
-    conn = get_db_connection()
-    with open('database/schema.sql', 'r') as f:
-        conn.executescript(f.read())
-    conn.close()
+def require_login(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please log in to access this page.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
+def require_admin(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session or session.get('user_type') != 'admin':
+            flash('Admin access required.', 'error')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Routes
 @app.route('/')
 def index():
-    """Home page showing today's menu"""
     conn = get_db_connection()
-    today = date.today().strftime('%Y-%m-%d')
     
-    # Get today's menu items with average ratings
+    # Get menu items with average ratings
     menu_items = conn.execute('''
         SELECT m.*, 
                COALESCE(AVG(r.rating), 0) as avg_rating,
-               COUNT(r.rating) as rating_count
+               COUNT(r.id) as rating_count
         FROM menu_items m
         LEFT JOIN ratings r ON m.id = r.menu_item_id
-        WHERE m.date = ?
+        WHERE m.is_available = 1
         GROUP BY m.id
-        ORDER BY m.meal_type, m.id
-    ''', (today,)).fetchall()
+        ORDER BY m.category, m.name
+    ''').fetchall()
     
     conn.close()
-    return render_template('index.html', menu_items=menu_items, today=today)
+    return render_template('index.html', menu_items=menu_items)
 
-@app.route('/login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Login page"""
-    return render_template('login.html')
-
-@app.route('/login', methods=['POST'])
-def login_post():
-    """Handle login form submission"""
-    username = request.form['username']
-    password = request.form['password']
-    user_type = request.form['user_type']
-    
-    conn = get_db_connection()
-    
-    if user_type == 'admin':
-        user = conn.execute(
-            'SELECT * FROM admins WHERE username = ?', (username,)
-        ).fetchone()
-    else:
-        user = conn.execute(
-            'SELECT * FROM students WHERE username = ?', (username,)
-        ).fetchone()
-    
-    conn.close()
-    
-    if user and check_password_hash(user['password'], password):
-        session['user_id'] = user['id']
-        session['username'] = user['username']
-        session['user_type'] = user_type
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user_type = request.form['user_type']
+        
+        conn = get_db_connection()
         
         if user_type == 'admin':
-            return redirect(url_for('admin_dashboard'))
+            user = conn.execute('SELECT * FROM admins WHERE username = ?', (username,)).fetchone()
         else:
-            return redirect(url_for('index'))
-    else:
-        flash('Invalid username or password!')
-        return redirect(url_for('login'))
+            user = conn.execute('SELECT * FROM students WHERE username = ?', (username,)).fetchone()
+        
+        conn.close()
+        
+        if user and check_password_hash(user['password_hash'], password):
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['user_type'] = user_type
+            session['full_name'] = user['full_name']
+            flash(f'Welcome, {user["full_name"]}!', 'success')
+            
+            if user_type == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(url_for('student_dashboard'))
+        else:
+            flash('Invalid credentials!', 'error')
+    
+    return render_template('login.html')
 
-@app.route('/register')
+@app.route('/register', methods=['GET', 'POST'])
 def register():
-    """Student registration page"""
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        full_name = request.form['full_name']
+        phone = request.form['phone']
+        room_number = request.form['room_number']
+        
+        conn = get_db_connection()
+        
+        # Check if username or email already exists
+        existing_user = conn.execute(
+            'SELECT * FROM students WHERE username = ? OR email = ?',
+            (username, email)
+        ).fetchone()
+        
+        if existing_user:
+            flash('Username or email already exists!', 'error')
+        else:
+            password_hash = generate_password_hash(password)
+            conn.execute('''
+                INSERT INTO students (username, email, password_hash, full_name, phone, room_number)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (username, email, password_hash, full_name, phone, room_number))
+            conn.commit()
+            flash('Registration successful! Please login.', 'success')
+            conn.close()
+            return redirect(url_for('login'))
+        
+        conn.close()
+    
     return render_template('register.html')
 
-@app.route('/register', methods=['POST'])
-def register_post():
-    """Handle student registration"""
-    username = request.form['username']
-    password = request.form['password']
-    full_name = request.form['full_name']
-    student_id = request.form['student_id']
+@app.route('/student_dashboard')
+@require_login
+def student_dashboard():
+    if session.get('user_type') != 'student':
+        return redirect(url_for('login'))
     
     conn = get_db_connection()
     
-    # Check if username already exists
-    existing_user = conn.execute(
-        'SELECT id FROM students WHERE username = ? OR student_id = ?', 
-        (username, student_id)
-    ).fetchone()
+    # Get recent orders
+    recent_orders = conn.execute('''
+        SELECT o.*, COUNT(oi.id) as item_count
+        FROM orders o
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.student_id = ?
+        GROUP BY o.id
+        ORDER BY o.order_date DESC
+        LIMIT 5
+    ''', (session['user_id'],)).fetchall()
     
-    if existing_user:
-        flash('Username or Student ID already exists!')
-        conn.close()
-        return redirect(url_for('register'))
+    # Get monthly bill
+    current_month = datetime.now().strftime('%Y-%m')
+    monthly_total = conn.execute('''
+        SELECT COALESCE(SUM(total_amount), 0) as total
+        FROM orders
+        WHERE student_id = ? AND strftime('%Y-%m', order_date) = ?
+    ''', (session['user_id'], current_month)).fetchone()['total']
     
-    # Create new student
-    hashed_password = generate_password_hash(password)
-    conn.execute(
-        'INSERT INTO students (username, password, full_name, student_id) VALUES (?, ?, ?, ?)',
-        (username, hashed_password, full_name, student_id)
-    )
-    conn.commit()
     conn.close()
-    
-    flash('Registration successful! Please login.')
-    return redirect(url_for('login'))
+    return render_template('student_dashboard.html', 
+                         recent_orders=recent_orders, 
+                         monthly_total=monthly_total)
 
-@app.route('/logout')
-def logout():
-    """Logout user"""
-    session.clear()
-    return redirect(url_for('index'))
-
-@app.route('/admin')
+@app.route('/admin_dashboard')
+@require_admin
 def admin_dashboard():
-    """Admin dashboard"""
-    if 'user_type' not in session or session['user_type'] != 'admin':
-        return redirect(url_for('login'))
-    
     conn = get_db_connection()
     
-    # Get menu items for today
-    today = date.today().strftime('%Y-%m-%d')
-    menu_items = conn.execute(
-        'SELECT * FROM menu_items WHERE date = ? ORDER BY meal_type, id', 
-        (today,)
-    ).fetchall()
+    # Get statistics
+    stats = {}
+    stats['total_students'] = conn.execute('SELECT COUNT(*) as count FROM students').fetchone()['count']
+    stats['total_orders'] = conn.execute('SELECT COUNT(*) as count FROM orders').fetchone()['count']
+    stats['pending_orders'] = conn.execute("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'").fetchone()['count']
+    stats['total_revenue'] = conn.execute('SELECT COALESCE(SUM(total_amount), 0) as total FROM orders').fetchone()['total']
     
-    # Get recent ratings
-    recent_ratings = conn.execute('''
-        SELECT r.*, m.item_name, m.meal_type, s.full_name
-        FROM ratings r
-        JOIN menu_items m ON r.menu_item_id = m.id
-        JOIN students s ON r.student_id = s.id
-        ORDER BY r.created_at DESC
+    # Get recent orders
+    recent_orders = conn.execute('''
+        SELECT o.*, s.full_name, s.room_number, COUNT(oi.id) as item_count
+        FROM orders o
+        JOIN students s ON o.student_id = s.id
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        GROUP BY o.id
+        ORDER BY o.order_date DESC
         LIMIT 10
     ''').fetchall()
     
     conn.close()
-    return render_template('admin_dashboard.html', menu_items=menu_items, 
-                         recent_ratings=recent_ratings, today=today)
-
-@app.route('/admin/add_menu', methods=['POST'])
-def add_menu_item():
-    """Add menu item"""
-    if 'user_type' not in session or session['user_type'] != 'admin':
-        return redirect(url_for('login'))
-    
-    item_name = request.form['item_name']
-    description = request.form['description']
-    meal_type = request.form['meal_type']
-    price = request.form['price']
-    menu_date = request.form['date']
-    
-    conn = get_db_connection()
-    conn.execute(
-        'INSERT INTO menu_items (item_name, description, meal_type, price, date) VALUES (?, ?, ?, ?, ?)',
-        (item_name, description, meal_type, float(price), menu_date)
-    )
-    conn.commit()
-    conn.close()
-    
-    flash('Menu item added successfully!')
-    return redirect(url_for('admin_dashboard'))
-
-@app.route('/rate_item', methods=['POST'])
-def rate_item():
-    """Rate a menu item"""
-    if 'user_id' not in session or session['user_type'] != 'student':
-        return jsonify({'success': False, 'message': 'Please login to rate items'})
-    
-    menu_item_id = request.json['menu_item_id']
-    rating = request.json['rating']
-    comment = request.json.get('comment', '')
-    
-    conn = get_db_connection()
-    
-    # Check if user already rated this item
-    existing_rating = conn.execute(
-        'SELECT id FROM ratings WHERE student_id = ? AND menu_item_id = ?',
-        (session['user_id'], menu_item_id)
-    ).fetchone()
-    
-    if existing_rating:
-        # Update existing rating
-        conn.execute(
-            'UPDATE ratings SET rating = ?, comment = ?, created_at = ? WHERE id = ?',
-            (rating, comment, datetime.now(), existing_rating['id'])
-        )
-    else:
-        # Create new rating
-        conn.execute(
-            'INSERT INTO ratings (student_id, menu_item_id, rating, comment) VALUES (?, ?, ?, ?)',
-            (session['user_id'], menu_item_id, rating, comment)
-        )
-    
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'success': True, 'message': 'Rating submitted successfully!'})
-
-@app.route('/menu/<date>')
-def menu_by_date(date):
-    """Show menu for specific date"""
-    conn = get_db_connection()
-    
-    menu_items = conn.execute('''
-        SELECT m.*, 
-               COALESCE(AVG(r.rating), 0) as avg_rating,
-               COUNT(r.rating) as rating_count
-        FROM menu_items m
-        LEFT JOIN ratings r ON m.id = r.menu_item_id
-        WHERE m.date = ?
-        GROUP BY m.id
-        ORDER BY m.meal_type, m.id
-    ''', (date,)).fetchall()
-    
-    conn.close()
-    return render_template('index.html', menu_items=menu_items, today=date)
-
-@app.route('/analytics')
-def analytics():
-    """Analytics page for admin"""
-    if 'user_type' not in session or session['user_type'] != 'admin':
-        return redirect(url_for('login'))
-    
-    conn = get_db_connection()
-    
-    # Get top rated items
-    top_items = conn.execute('''
-        SELECT m.item_name, AVG(r.rating) as avg_rating, COUNT(r.rating) as rating_count
-        FROM menu_items m
-        JOIN ratings r ON m.id = r.menu_item_id
-        GROUP BY m.id
-        HAVING COUNT(r.rating) >= 3
-        ORDER BY avg_rating DESC
-        LIMIT 10
-    ''').fetchall()
-    
-    # Get rating distribution
-    rating_distribution = conn.execute('''
-        SELECT rating, COUNT(*) as count
-        FROM ratings
-        GROUP BY rating
-        ORDER BY rating
-    ''').fetchall()
-    
-    conn.close()
-    return render_template('analytics.html', top_items=top_items, 
-                         rating_distribution=rating_distribution)
+    return render_template('admin_dashboard.html', stats=stats, recent_orders=recent_orders)
 
 @app.route('/place_order', methods=['POST'])
+@require_login
 def place_order():
-    """Place a new order"""
-    if 'user_id' not in session or session['user_type'] != 'student':
-        return jsonify({'success': False, 'message': 'Please login to place orders'})
+    if session.get('user_type') != 'student':
+        return jsonify({'success': False, 'message': 'Student login required'})
     
-    order_items = request.json.get('items', [])
-    if not order_items:
-        return jsonify({'success': False, 'message': 'No items in order'})
+    data = request.get_json()
+    items = data.get('items', [])
+    special_instructions = data.get('special_instructions', '')
+    
+    if not items:
+        return jsonify({'success': False, 'message': 'No items selected'})
     
     conn = get_db_connection()
     
-    # Calculate total amount
-    total_amount = 0
-    for item in order_items:
-        menu_item = conn.execute('SELECT price FROM menu_items WHERE id = ?', (item['id'],)).fetchone()
-        if menu_item:
-            total_amount += menu_item['price'] * item['quantity']
+    try:
+        # Calculate total amount
+        total_amount = 0
+        order_items = []
+        
+        for item in items:
+            menu_item = conn.execute('SELECT * FROM menu_items WHERE id = ?', (item['id'],)).fetchone()
+            if menu_item:
+                item_total = menu_item['price'] * item['quantity']
+                total_amount += item_total
+                order_items.append({
+                    'menu_item_id': item['id'],
+                    'quantity': item['quantity'],
+                    'price': menu_item['price']
+                })
+        
+        # Create order
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO orders (student_id, total_amount, special_instructions)
+            VALUES (?, ?, ?)
+        ''', (session['user_id'], total_amount, special_instructions))
+        
+        order_id = cursor.lastrowid
+        
+        # Add order items
+        for item in order_items:
+            cursor.execute('''
+                INSERT INTO order_items (order_id, menu_item_id, quantity, price)
+                VALUES (?, ?, ?, ?)
+            ''', (order_id, item['menu_item_id'], item['quantity'], item['price']))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Order placed successfully!', 'order_id': order_id})
     
-    # Create order
-    cursor = conn.execute(
-        'INSERT INTO orders (student_id, order_date, total_amount, status) VALUES (?, ?, ?, ?)',
-        (session['user_id'], date.today().strftime('%Y-%m-%d'), total_amount, 'pending')
-    )
-    order_id = cursor.lastrowid
-    
-    # Add order items
-    for item in order_items:
-        menu_item = conn.execute('SELECT price FROM menu_items WHERE id = ?', (item['id'],)).fetchone()
-        if menu_item:
-            conn.execute(
-                'INSERT INTO order_items (order_id, menu_item_id, quantity, price) VALUES (?, ?, ?, ?)',
-                (order_id, item['id'], item['quantity'], menu_item['price'])
-            )
-    
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'success': True, 'message': f'Order #{order_id} placed successfully!', 'order_id': order_id})
+    except Exception as e:
+        conn.close()
+        return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/orders')
-def student_orders():
-    """Student order history"""
-    if 'user_id' not in session or session['user_type'] != 'student':
+@app.route('/my_orders')
+@require_login
+def my_orders():
+    if session.get('user_type') != 'student':
         return redirect(url_for('login'))
     
     conn = get_db_connection()
@@ -321,40 +247,40 @@ def student_orders():
         LEFT JOIN order_items oi ON o.id = oi.order_id
         WHERE o.student_id = ?
         GROUP BY o.id
-        ORDER BY o.created_at DESC
+        ORDER BY o.order_date DESC
     ''', (session['user_id'],)).fetchall()
     
     conn.close()
-    return render_template('student_orders.html', orders=orders)
+    return render_template('my_orders.html', orders=orders)
 
-@app.route('/order/<int:order_id>')
-def order_details():
-    """View order details"""
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
+@app.route('/order_details/<int:order_id>')
+@require_login
+def order_details(order_id):
     conn = get_db_connection()
     
-    # Get order details
-    order = conn.execute('''
-        SELECT o.*, s.full_name, s.student_id 
-        FROM orders o
-        JOIN students s ON o.student_id = s.id
-        WHERE o.id = ?
-    ''', (order_id,)).fetchone()
+    # Check if user can access this order
+    if session.get('user_type') == 'student':
+        order = conn.execute('''
+            SELECT o.*, s.full_name, s.room_number, s.phone
+            FROM orders o
+            JOIN students s ON o.student_id = s.id
+            WHERE o.id = ? AND o.student_id = ?
+        ''', (order_id, session['user_id'])).fetchone()
+    else:  # admin
+        order = conn.execute('''
+            SELECT o.*, s.full_name, s.room_number, s.phone
+            FROM orders o
+            JOIN students s ON o.student_id = s.id
+            WHERE o.id = ?
+        ''', (order_id,)).fetchone()
     
     if not order:
-        flash('Order not found!')
-        return redirect(url_for('index'))
-    
-    # Check if user can view this order
-    if session['user_type'] == 'student' and order['student_id'] != session['user_id']:
-        flash('Access denied!')
-        return redirect(url_for('student_orders'))
+        flash('Order not found!', 'error')
+        return redirect(url_for('my_orders') if session.get('user_type') == 'student' else url_for('manage_orders'))
     
     # Get order items
     order_items = conn.execute('''
-        SELECT oi.*, m.item_name, m.description
+        SELECT oi.*, m.name, m.description
         FROM order_items oi
         JOIN menu_items m ON oi.menu_item_id = m.id
         WHERE oi.order_id = ?
@@ -363,138 +289,204 @@ def order_details():
     conn.close()
     return render_template('order_details.html', order=order, order_items=order_items)
 
-@app.route('/admin/orders')
-def admin_orders():
-    """Admin view all orders"""
-    if 'user_type' not in session or session['user_type'] != 'admin':
-        return redirect(url_for('login'))
-    
+@app.route('/manage_orders')
+@require_admin
+def manage_orders():
     conn = get_db_connection()
     
-    orders = conn.execute('''
-        SELECT o.*, s.full_name, s.student_id, COUNT(oi.id) as item_count
+    status_filter = request.args.get('status', 'all')
+    
+    query = '''
+        SELECT o.*, s.full_name, s.room_number, COUNT(oi.id) as item_count
         FROM orders o
         JOIN students s ON o.student_id = s.id
         LEFT JOIN order_items oi ON o.id = oi.order_id
-        GROUP BY o.id
-        ORDER BY o.created_at DESC
-    ''').fetchall()
+    '''
     
+    if status_filter != 'all':
+        query += f" WHERE o.status = '{status_filter}'"
+    
+    query += ' GROUP BY o.id ORDER BY o.order_date DESC'
+    
+    orders = conn.execute(query).fetchall()
     conn.close()
-    return render_template('admin_orders.html', orders=orders)
+    
+    return render_template('manage_orders.html', orders=orders, status_filter=status_filter)
 
-@app.route('/admin/update_order_status', methods=['POST'])
+@app.route('/update_order_status', methods=['POST'])
+@require_admin
 def update_order_status():
-    """Update order status"""
-    if 'user_type' not in session or session['user_type'] != 'admin':
-        return jsonify({'success': False, 'message': 'Access denied'})
-    
-    order_id = request.json.get('order_id')
-    new_status = request.json.get('status')
-    
-    valid_statuses = ['pending', 'preparing', 'ready', 'served', 'cancelled']
-    if new_status not in valid_statuses:
-        return jsonify({'success': False, 'message': 'Invalid status'})
+    order_id = request.form['order_id']
+    new_status = request.form['status']
     
     conn = get_db_connection()
     conn.execute('UPDATE orders SET status = ? WHERE id = ?', (new_status, order_id))
     conn.commit()
     conn.close()
     
-    return jsonify({'success': True, 'message': 'Order status updated successfully!'})
+    flash('Order status updated successfully!', 'success')
+    return redirect(url_for('manage_orders'))
 
-@app.route('/billing')
-def student_billing():
-    """Student billing and payment history"""
-    if 'user_id' not in session or session['user_type'] != 'student':
+@app.route('/monthly_bills')
+@require_login
+def monthly_bills():
+    if session.get('user_type') != 'student':
         return redirect(url_for('login'))
     
     conn = get_db_connection()
     
-    # Get monthly bills
-    monthly_bills = conn.execute('''
+    # Get monthly bills for the past 6 months
+    bills = conn.execute('''
         SELECT 
-            strftime('%Y-%m', o.order_date) as month,
-            SUM(o.total_amount) as total_amount,
-            COUNT(o.id) as order_count
-        FROM orders o
-        WHERE o.student_id = ? AND o.status != 'cancelled'
-        GROUP BY strftime('%Y-%m', o.order_date)
+            strftime('%Y-%m', order_date) as month,
+            strftime('%Y', order_date) as year,
+            strftime('%m', order_date) as month_num,
+            SUM(total_amount) as total_amount,
+            COUNT(*) as order_count
+        FROM orders
+        WHERE student_id = ? AND order_date >= date('now', '-6 months')
+        GROUP BY strftime('%Y-%m', order_date)
         ORDER BY month DESC
     ''', (session['user_id'],)).fetchall()
     
-    # Get recent orders for current month
-    current_month = date.today().strftime('%Y-%m')
-    recent_orders = conn.execute('''
-        SELECT o.*, COUNT(oi.id) as item_count
-        FROM orders o
-        LEFT JOIN order_items oi ON o.id = oi.order_id
-        WHERE o.student_id = ? AND strftime('%Y-%m', o.order_date) = ?
-        GROUP BY o.id
-        ORDER BY o.created_at DESC
-    ''', (session['user_id'], current_month)).fetchall()
+    # Add month names
+    bills_with_names = []
+    for bill in bills:
+        month_name = calendar.month_name[int(bill['month_num'])]
+        bills_with_names.append({
+            'month': bill['month'],
+            'year': bill['year'],
+            'month_name': month_name,
+            'total_amount': bill['total_amount'],
+            'order_count': bill['order_count']
+        })
     
     conn.close()
-    return render_template('student_billing.html', monthly_bills=monthly_bills, 
-                         recent_orders=recent_orders, current_month=current_month)
+    return render_template('monthly_bills.html', bills=bills_with_names)
 
-@app.route('/admin/billing')
-def admin_billing():
-    """Admin billing overview"""
-    if 'user_type' not in session or session['user_type'] != 'admin':
-        return redirect(url_for('login'))
+@app.route('/submit_rating', methods=['POST'])
+@require_login
+def submit_rating():
+    if session.get('user_type') != 'student':
+        return jsonify({'success': False, 'message': 'Student login required'})
+    
+    data = request.get_json()
+    menu_item_id = data.get('menu_item_id')
+    rating = data.get('rating')
+    comment = data.get('comment', '')
     
     conn = get_db_connection()
     
-    # Get billing summary by student
-    student_bills = conn.execute('''
-        SELECT 
-            s.full_name, 
-            s.student_id,
-            SUM(o.total_amount) as total_amount,
-            COUNT(o.id) as order_count
-        FROM students s
-        LEFT JOIN orders o ON s.id = o.student_id AND o.status != 'cancelled'
-        GROUP BY s.id
-        HAVING SUM(o.total_amount) > 0
-        ORDER BY total_amount DESC
-    ''').fetchall()
+    try:
+        # Check if user already rated this item
+        existing_rating = conn.execute(
+            'SELECT * FROM ratings WHERE student_id = ? AND menu_item_id = ?',
+            (session['user_id'], menu_item_id)
+        ).fetchone()
+        
+        if existing_rating:
+            # Update existing rating
+            conn.execute('''
+                UPDATE ratings 
+                SET rating = ?, comment = ?, created_at = CURRENT_TIMESTAMP
+                WHERE student_id = ? AND menu_item_id = ?
+            ''', (rating, comment, session['user_id'], menu_item_id))
+        else:
+            # Insert new rating
+            conn.execute('''
+                INSERT INTO ratings (student_id, menu_item_id, rating, comment)
+                VALUES (?, ?, ?, ?)
+            ''', (session['user_id'], menu_item_id, rating, comment))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Rating submitted successfully!'})
     
-    # Get monthly revenue
-    monthly_revenue = conn.execute('''
-        SELECT 
-            strftime('%Y-%m', o.order_date) as month,
-            SUM(o.total_amount) as revenue,
-            COUNT(o.id) as order_count
-        FROM orders o
-        WHERE o.status != 'cancelled'
-        GROUP BY strftime('%Y-%m', o.order_date)
-        ORDER BY month DESC
-        LIMIT 12
-    ''').fetchall()
+    except Exception as e:
+        conn.close()
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/analytics')
+@require_admin
+def analytics():
+    conn = get_db_connection()
     
-    conn.close()
-    return render_template('admin_billing.html', student_bills=student_bills, 
-                         monthly_revenue=monthly_revenue)
-        JOIN ratings r ON m.id = r.menu_item_id
+    # Get rating analytics
+    rating_stats = conn.execute('''
+        SELECT 
+            m.name,
+            AVG(r.rating) as avg_rating,
+            COUNT(r.id) as rating_count
+        FROM menu_items m
+        LEFT JOIN ratings r ON m.id = r.menu_item_id
         GROUP BY m.id
-        HAVING COUNT(r.rating) >= 3
         ORDER BY avg_rating DESC
-        LIMIT 10
     ''').fetchall()
     
-    # Get rating distribution
-    rating_distribution = conn.execute('''
-        SELECT rating, COUNT(*) as count
-        FROM ratings
-        GROUP BY rating
-        ORDER BY rating
+    # Get order analytics
+    daily_orders = conn.execute('''
+        SELECT 
+            DATE(order_date) as order_day,
+            COUNT(*) as order_count,
+            SUM(total_amount) as daily_revenue
+        FROM orders
+        WHERE order_date >= date('now', '-30 days')
+        GROUP BY DATE(order_date)
+        ORDER BY order_day
     ''').fetchall()
     
     conn.close()
-    return render_template('analytics.html', top_items=top_items, 
-                         rating_distribution=rating_distribution)
+    return render_template('analytics.html', rating_stats=rating_stats, daily_orders=daily_orders)
+
+@app.route('/manage_menu')
+@require_admin
+def manage_menu():
+    conn = get_db_connection()
+    menu_items = conn.execute('SELECT * FROM menu_items ORDER BY category, name').fetchall()
+    conn.close()
+    return render_template('manage_menu.html', menu_items=menu_items)
+
+@app.route('/add_menu_item', methods=['POST'])
+@require_admin
+def add_menu_item():
+    name = request.form['name']
+    description = request.form['description']
+    price = float(request.form['price'])
+    category = request.form['category']
+    meal_type = request.form['meal_type']
+    
+    conn = get_db_connection()
+    conn.execute('''
+        INSERT INTO menu_items (name, description, price, category, meal_type)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (name, description, price, category, meal_type))
+    conn.commit()
+    conn.close()
+    
+    flash('Menu item added successfully!', 'success')
+    return redirect(url_for('manage_menu'))
+
+@app.route('/toggle_menu_item/<int:item_id>')
+@require_admin
+def toggle_menu_item(item_id):
+    conn = get_db_connection()
+    item = conn.execute('SELECT * FROM menu_items WHERE id = ?', (item_id,)).fetchone()
+    
+    if item:
+        new_status = 0 if item['is_available'] else 1
+        conn.execute('UPDATE menu_items SET is_available = ? WHERE id = ?', (new_status, item_id))
+        conn.commit()
+        flash('Menu item status updated!', 'success')
+    
+    conn.close()
+    return redirect(url_for('manage_menu'))
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True, host='0.0.0.0', port=5000)

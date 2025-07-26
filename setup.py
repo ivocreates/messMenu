@@ -4,54 +4,30 @@ Setup script for Mess Menu Rater Application
 This script initializes the database and creates the admin user
 """
 
-import sqlite3
-import os
 from werkzeug.security import generate_password_hash
+import sqlite3
+from datetime import datetime, timedelta
+import random
+import os
 
-def setup_database():
-    """Setup the database with initial data"""
-    print("Setting up database...")
-    
-    # Create database directory if it doesn't exist
-    if not os.path.exists('database'):
-        os.makedirs('database')
-    
-    # Connect to database
+def init_database():
     conn = sqlite3.connect('database/mess_menu.db')
+    cursor = conn.cursor()
     
     # Read and execute schema
-    with open('database/schema.sql', 'r') as f:
-        conn.executescript(f.read())
+    with open('database/schema.sql', 'r') as schema_file:
+        schema_sql = schema_file.read()
+        cursor.executescript(schema_sql)
     
-    # Create admin user with hashed password
+    # Create default admin with properly hashed password
     admin_password = generate_password_hash('admin123')
-    
-    try:
-        # First, delete existing admin if any (for reset)
-        conn.execute('DELETE FROM admins WHERE username = ?', ('admin',))
-        
-        # Insert new admin with properly hashed password
-        conn.execute(
-            'INSERT INTO admins (username, password, full_name) VALUES (?, ?, ?)',
-            ('admin', admin_password, 'System Administrator')
-        )
-        print("✓ Admin user created (username: admin, password: admin123)")
-    except sqlite3.IntegrityError:
-        print("✓ Admin user already exists")
-    
-    conn.commit()
-    conn.close()
-    print("✓ Database setup completed!")
-
-def create_sample_data():
-    """Create sample menu items for testing"""
-    print("Creating sample data...")
-    
-    conn = sqlite3.connect('database/mess_menu.db')
+    cursor.execute('''
+        INSERT OR REPLACE INTO admins (username, password, full_name) 
+        VALUES (?, ?, ?)
+    ''', ('admin', admin_password, 'System Administrator'))
     
     # Sample menu items for today
-    from datetime import date
-    today = date.today().strftime('%Y-%m-%d')
+    today = datetime.now().strftime('%Y-%m-%d')
     
     sample_items = [
         ('Idli Sambhar', 'Steamed rice cakes with lentil curry', 'breakfast', 25.00, today),
@@ -72,7 +48,7 @@ def create_sample_data():
     
     for item in sample_items:
         try:
-            conn.execute(
+            cursor.execute(
                 'INSERT INTO menu_items (item_name, description, meal_type, price, date) VALUES (?, ?, ?, ?, ?)',
                 item
             )
@@ -81,12 +57,55 @@ def create_sample_data():
     
     conn.commit()
     conn.close()
-    print("✓ Sample data created!")
+    print("✅ Database initialized successfully with admin user: admin/admin123")
+
+def create_database():
+    """Create the database and tables from schema.sql"""
+    try:
+        # Create database directory if it doesn't exist
+        os.makedirs('database', exist_ok=True)
+        
+        # Connect to database
+        conn = sqlite3.connect('database/mess_menu.db')
+        cursor = conn.cursor()
+        
+        # Read and execute schema
+        with open('database/schema.sql', 'r') as schema_file:
+            schema_sql = schema_file.read()
+            # Split by semicolons and execute each statement
+            statements = [stmt.strip() for stmt in schema_sql.split(';') if stmt.strip()]
+            for statement in statements:
+                cursor.execute(statement)
+        
+        # Update admin password with proper hash
+        admin_password_hash = generate_password_hash('admin123')
+        cursor.execute("""
+            UPDATE admins 
+            SET password_hash = ? 
+            WHERE username = 'admin'
+        """, (admin_password_hash,))
+        
+        # Update student password with proper hash
+        student_password_hash = generate_password_hash('password123')
+        cursor.execute("""
+            UPDATE students 
+            SET password_hash = ? 
+            WHERE username = 'student1'
+        """, (student_password_hash,))
+        
+        conn.commit()
+        conn.close()
+        
+        print("✅ Database created successfully!")
+        print("✅ Admin credentials: admin / admin123")
+        print("✅ Sample student: student1 / password123")
+        
+    except Exception as e:
+        print(f"❌ Error creating database: {e}")
 
 if __name__ == '__main__':
     print("=== Mess Menu Rater Setup ===")
-    setup_database()
-    create_sample_data()
+    init_database()
     print("\n🎉 Setup completed successfully!")
     print("\nTo start the application:")
     print("1. Activate your virtual environment (if using one)")

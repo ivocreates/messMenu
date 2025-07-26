@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Order Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="glass-card p-4 fade-in">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-clipboard-list"></i> Order Management</h2>
+            <div>
+                <button class="btn btn-success" onclick="refreshOrders()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Order Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="text-center p-3" style="background: rgba(52, 152, 219, 0.1); border-radius: 12px;">
+                    <h4 class="text-primary">{{ orders|selectattr('3', 'equalto', 'pending')|list|length }}</h4>
+                    <small>Pending Orders</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center p-3" style="background: rgba(241, 143, 1, 0.1); border-radius: 12px;">
+                    <h4 class="text-warning">{{ orders|selectattr('3', 'equalto', 'preparing')|list|length }}</h4>
+                    <small>Preparing</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center p-3" style="background: rgba(39, 174, 96, 0.1); border-radius: 12px;">
+                    <h4 class="text-success">{{ orders|selectattr('3', 'equalto', 'ready')|list|length }}</h4>
+                    <small>Ready to Serve</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center p-3" style="background: rgba(142, 68, 173, 0.1); border-radius: 12px;">
+                    <h4 class="text-info">{{ orders|selectattr('3', 'equalto', 'served')|list|length }}</h4>
+                    <small>Served</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Table -->
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Student</th>
+                        <th>Student ID</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr class="slide-up" id="order-{{ order[0] }}">
+                        <td><strong>#{{ order[0] }}</strong></td>
+                        <td>{{ order[1] }}</td>
+                        <td>{{ order[2] }}</td>
+                        <td>{{ order[3] }}</td>
+                        <td><small>{{ order[7] if order[7] else 'No items' }}</small></td>
+                        <td><strong>₹{{ "%.2f"|format(order[4]) }}</strong></td>
+                        <td>
+                            <span class="status-badge status-{{ order[5] }}">
+                                {{ order[5]|title }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if order[5] != 'served' and order[5] != 'cancelled' %}
+                            <div class="btn-group btn-group-sm">
+                                {% if order[5] == 'pending' %}
+                                <button class="btn btn-warning btn-sm" onclick="updateOrderStatus({{ order[0] }}, 'preparing')">
+                                    <i class="fas fa-utensils"></i> Start
+                                </button>
+                                {% elif order[5] == 'preparing' %}
+                                <button class="btn btn-success btn-sm" onclick="updateOrderStatus({{ order[0] }}, 'ready')">
+                                    <i class="fas fa-bell"></i> Ready
+                                </button>
+                                {% elif order[5] == 'ready' %}
+                                <button class="btn btn-primary btn-sm" onclick="updateOrderStatus({{ order[0] }}, 'served')">
+                                    <i class="fas fa-check"></i> Served
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-danger btn-sm" onclick="updateOrderStatus({{ order[0] }}, 'cancelled')">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+            <h4>No Orders Found</h4>
+            <p class="text-muted">Orders will appear here when students place them.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function updateOrderStatus(orderId, newStatus) {
+    if (confirm('Are you sure you want to update this order status?')) {
+        fetch('/admin/update_order_status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                order_id: orderId,
+                status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+}
+
+function refreshOrders() {
+    location.reload();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}My Orders - Mess Menu Rater{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="glass-card p-4 fade-in">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-receipt"></i> My Orders</h2>
+                    <a href="{{ url_for('billing') }}" class="btn btn-success">
+                        <i class="fas fa-file-invoice-dollar"></i> View Billing
+                    </a>
+                </div>
+
+                {% if orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Items</th>
+                                <th>Total Amount</th>
+                                <th>Status</th>
+                                <th>Ordered At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr class="slide-up">
+                                <td><strong>#{{ order[0] }}</strong></td>
+                                <td>{{ order[1] }}</td>
+                                <td>
+                                    <small class="text-muted">{{ order[5] if order[5] else 'No items' }}</small>
+                                </td>
+                                <td><strong>₹{{ "%.2f"|format(order[2]) }}</strong></td>
+                                <td>
+                                    <span class="status-badge status-{{ order[3] }}">
+                                        {% if order[3] == 'pending' %}
+                                            <i class="fas fa-clock"></i> Pending
+                                        {% elif order[3] == 'preparing' %}
+                                            <i class="fas fa-utensils"></i> Preparing
+                                        {% elif order[3] == 'ready' %}
+                                            <i class="fas fa-bell"></i> Ready
+                                        {% elif order[3] == 'served' %}
+                                            <i class="fas fa-check-circle"></i> Served
+                                        {% elif order[3] == 'cancelled' %}
+                                            <i class="fas fa-times-circle"></i> Cancelled
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td><small>{{ order[4] }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                    <h4>No Orders Yet</h4>
+                    <p class="text-muted">Start by placing your first order!</p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="fas fa-utensils"></i> Browse Menu
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
