@@ -1,0 +1,80 @@
+/* Additional text visibility fixes for admin pages */
+.metric-card, .billing-card, .review-stat-card, .analytics-card, .billing-table-card, .orders-card, .reviews-list-card, .admin-card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #1e293b !important;
+}
+
+.metric-card .metric-content h3,
+.billing-card .billing-content h3,
+.review-stat-card .stat-content h3 {
+    color: #0f172a !important;
+    font-weight: 700;
+}
+
+.metric-card .metric-content p,
+.billing-card .billing-content p,
+.review-stat-card .stat-content p {
+    color: #64748b !important;
+}
+
+.customer-info strong,
+.item-info strong {
+    color: #0f172a !important;
+}
+
+.customer-info small,
+.item-info small {
+    color: #64748b !important;
+}
+
+.amount {
+    color: #059669 !important;
+    font-weight: 600;
+}
+
+.status-pending {
+    background-color: #d97706 !important;
+    color: #ffffff !important;
+}
+
+.status-confirmed {
+    background-color: #0891b2 !important;
+    color: #ffffff !important;
+}
+
+.status-preparing {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+}
+
+.status-ready, .status-served {
+    background-color: #059669 !important;
+    color: #ffffff !important;
+}
+
+.status-cancelled {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+}
+
+.rating-display i.fa-star {
+    color: #d97706 !important;
+}
+
+.rating-display i.fa-star.text-muted {
+    color: #94a3b8 !important;
+}
+
+.lead {
+    color: #334155 !important;
+    font-weight: 400;
+}
+
+.analytics-header h1,
+.billing-header h1,
+.orders-header h1,
+.reviews-header h1,
+.dashboard-header h1 {
+    color: #0f172a !important;
+    font-weight: 700;
+}

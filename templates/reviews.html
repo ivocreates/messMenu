@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+
+{% block title %}Reviews - Mess Menu Rater{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="reviews-header fade-in">
+        <h1><i class="fas fa-star"></i> Item Reviews</h1>
+        <p class="lead">Read and write reviews for menu items</p>
+    </div>
+
+    <!-- Review Stats -->
+    <div class="row mb-5">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="review-stat-card">
+                <div class="stat-icon bg-warning">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ total_reviews or 0 }}</h3>
+                    <p>Total Reviews</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="review-stat-card">
+                <div class="stat-icon bg-success">
+                    <i class="fas fa-thumbs-up"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ "%.1f"|format(average_rating or 0) }}</h3>
+                    <p>Average Rating</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="review-stat-card">
+                <div class="stat-icon bg-info">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ reviewed_items or 0 }}</h3>
+                    <p>Items Reviewed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="review-stat-card">
+                <div class="stat-icon bg-primary">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ active_reviewers or 0 }}</h3>
+                    <p>Active Reviewers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Write Review Section -->
+    {% if current_user.is_authenticated %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="review-form-card">
+                <div class="card-header">
+                    <h4><i class="fas fa-pen"></i> Write a Review</h4>
+                </div>
+                <div class="card-body">
+                    <form id="reviewForm" method="POST" action="{{ url_for('submit_review') }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="menuItem" class="form-label">Select Menu Item</label>
+                                <select class="form-select" id="menuItem" name="menu_item_id" required>
+                                    <option value="">Choose an item to review...</option>
+                                    {% for item in menu_items %}
+                                        <option value="{{ item.id }}">{{ item.name }} ({{ item.meal_type|title }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="rating" class="form-label">Rating</label>
+                                <div class="rating-input">
+                                    <input type="hidden" id="rating" name="rating" value="0" required>
+                                    <div class="star-rating">
+                                        <i class="fas fa-star" data-rating="1"></i>
+                                        <i class="fas fa-star" data-rating="2"></i>
+                                        <i class="fas fa-star" data-rating="3"></i>
+                                        <i class="fas fa-star" data-rating="4"></i>
+                                        <i class="fas fa-star" data-rating="5"></i>
+                                    </div>
+                                    <small class="rating-text">Click stars to rate</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reviewText" class="form-label">Your Review</label>
+                            <textarea class="form-control" id="reviewText" name="review_text" rows="4" 
+                                      placeholder="Share your experience with this item..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Submit Review
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Reviews List -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="reviews-list-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-comments"></i> Recent Reviews</h4>
+                    <div class="review-filters">
+                        <select class="form-select form-select-sm" id="ratingFilter" onchange="filterReviews()">
+                            <option value="">All Ratings</option>
+                            <option value="5">5 Stars</option>
+                            <option value="4">4+ Stars</option>
+                            <option value="3">3+ Stars</option>
+                            <option value="2">2+ Stars</option>
+                            <option value="1">1+ Stars</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if reviews %}
+                        <div class="reviews-container">
+                            {% for review in reviews %}
+                                <div class="review-item" data-rating="{{ review.rating }}">
+                                    <div class="review-header">
+                                        <div class="reviewer-info">
+                                            <div class="reviewer-avatar">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div class="reviewer-details">
+                                                <h6>{{ review.username }}</h6>
+                                                <small class="text-muted">{{ review.created_at }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="review-rating">
+                                            {% for i in range(5) %}
+                                                <i class="fas fa-star {% if i < review.rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="review-content">
+                                        <div class="item-name">
+                                            <strong>{{ review.item_name }}</strong>
+                                            <span class="meal-type">{{ review.meal_type|title }}</span>
+                                        </div>
+                                        <p class="review-text">{{ review.review_text }}</p>
+                                    </div>
+                                    {% if current_user.is_authenticated and (current_user.username == review.username or current_user.is_admin) %}
+                                        <div class="review-actions">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editReview({{ review.id }})">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteReview({{ review.id }})">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                            <h5>No Reviews Yet</h5>
+                            <p class="text-muted">Be the first to write a review for our menu items!</p>
+                            {% if not current_user.is_authenticated %}
+                                <a href="{{ url_for('login') }}" class="btn btn-primary">
+                                    <i class="fas fa-sign-in-alt"></i> Login to Review
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.review-stat-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(var(--primary-rgb), 0.1);
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.review-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--white);
+    flex-shrink: 0;
+}
+
+.stat-content h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.stat-content p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: 500;
+}
+
+.review-form-card,
+.reviews-list-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(var(--primary-rgb), 0.1);
+    overflow: hidden;
+}
+
+.review-form-card .card-header,
+.reviews-list-card .card-header {
+    background: var(--bg-light);
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--space-4) var(--space-6);
+}
+
+.review-form-card .card-header h4,
+.reviews-list-card .card-header h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.review-form-card .card-body,
+.reviews-list-card .card-body {
+    padding: var(--space-6);
+}
+
+.rating-input {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.star-rating {
+    display: flex;
+    gap: var(--space-1);
+    cursor: pointer;
+}
+
+.star-rating i {
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    transition: var(--transition-smooth);
+}
+
+.star-rating i:hover,
+.star-rating i.active {
+    color: var(--warning-color);
+}
+
+.rating-text {
+    color: var(--text-secondary);
+}
+
+.review-item {
+    border: 1px solid rgba(var(--primary-rgb), 0.1);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    background: var(--bg-light);
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-3);
+}
+
+.reviewer-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.reviewer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background: var(--primary-color);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.reviewer-details h6 {
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.review-rating {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.review-content {
+    margin-bottom: var(--space-3);
+}
+
+.item-name {
+    margin-bottom: var(--space-2);
+}
+
+.item-name strong {
+    color: var(--text-primary);
+}
+
+.meal-type {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: var(--space-2);
+}
+
+.review-text {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.review-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.review-filters {
+    min-width: 150px;
+}
+
+@media (max-width: 768px) {
+    .review-stat-card {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--space-3);
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    
+    .stat-content h3 {
+        font-size: 1.5rem;
+    }
+    
+    .review-header {
+        flex-direction: column;
+        gap: var(--space-2);
+        align-items: flex-start;
+    }
+    
+    .review-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Star rating functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const stars = document.querySelectorAll('.star-rating i');
+    const ratingInput = document.getElementById('rating');
+    const ratingText = document.querySelector('.rating-text');
+    
+    stars.forEach((star, index) => {
+        star.addEventListener('click', function() {
+            const rating = index + 1;
+            ratingInput.value = rating;
+            
+            // Update star display
+            stars.forEach((s, i) => {
+                s.classList.toggle('active', i < rating);
+            });
+            
+            // Update rating text
+            const ratingLabels = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+            ratingText.textContent = ratingLabels[rating];
+        });
+        
+        star.addEventListener('mouseover', function() {
+            const rating = index + 1;
+            stars.forEach((s, i) => {
+                s.style.color = i < rating ? 'var(--warning-color)' : 'var(--text-muted)';
+            });
+        });
+    });
+    
+    document.querySelector('.star-rating').addEventListener('mouseleave', function() {
+        const currentRating = parseInt(ratingInput.value) || 0;
+        stars.forEach((s, i) => {
+            s.style.color = i < currentRating ? 'var(--warning-color)' : 'var(--text-muted)';
+        });
+    });
+});
+
+// Filter reviews by rating
+function filterReviews() {
+    const filter = document.getElementById('ratingFilter').value;
+    const reviews = document.querySelectorAll('.review-item');
+    
+    reviews.forEach(review => {
+        const rating = parseInt(review.dataset.rating);
+        if (!filter || rating >= parseInt(filter)) {
+            review.style.display = 'block';
+        } else {
+            review.style.display = 'none';
+        }
+    });
+}
+
+// Edit review functionality
+function editReview(reviewId) {
+    // This would open an edit modal or redirect to edit page
+    window.location.href = `/reviews/${reviewId}/edit`;
+}
+
+// Delete review functionality
+function deleteReview(reviewId) {
+    if (confirm('Are you sure you want to delete this review?')) {
+        fetch(`/reviews/${reviewId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to delete review');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting review');
+        });
+    }
+}
+
+// Form submission
+document.getElementById('reviewForm').addEventListener('submit', function(e) {
+    const rating = document.getElementById('rating').value;
+    if (rating === '0') {
+        e.preventDefault();
+        alert('Please select a rating');
+        return;
+    }
+});
+</script>
+{% endblock %}

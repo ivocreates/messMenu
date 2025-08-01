@@ -3,50 +3,310 @@
 {% block title %}Login - Mess Menu Rater{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card">
-            <div class="card-header text-center">
-                <h4><i class="fas fa-sign-in-alt"></i> Login</h4>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="login-card" style="background: rgba(255, 255, 255, 0.95) !important; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
+                <div class="login-header text-center">
+                    <div class="login-icon">
+                        <i class="fas fa-user-circle" style="color: #2563eb !important; font-size: 3rem;"></i>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                    <h2 style="color: #1e293b !important; font-weight: 700;">Welcome Back</h2>
+                    <p class="text-muted" style="color: #64748b !important;">Sign in to your account</p>
+                </div>
+
+                <!-- Demo Accounts Info -->
+                <div class="demo-info" style="background: #f8fafc !important; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <h6 style="color: #1e293b !important; font-weight: 700;"><i class="fas fa-info-circle"></i> Demo Accounts</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small><strong>Student:</strong><br>
+                            Username: <code>student</code><br>
+                            Password: <code>student123</code></small>
+                        </div>
+                        <div class="col-6">
+                            <small><strong>Admin:</strong><br>
+                            Username: <code>admin</code><br>
+                            Password: <code>admin123</code></small>
+                        </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="user_type" class="form-label">Login as</label>
-                        <select class="form-control" id="user_type" name="user_type" required>
-                            <option value="student">Student</option>
-                            <option value="admin">Admin</option>
-                        </select>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                                <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }}"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Login Form -->
+                <form method="POST" action="{{ url_for('login') }}" class="login-form">
+                    <div class="form-group">
+                        <label for="username" class="form-label" style="color: #374151 !important; font-weight: 600;">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-user"></i>
+                            </span>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   placeholder="Enter your username" required
+                                   style="color: #1f2937 !important; background-color: #ffffff !important; border: 2px solid #e5e7eb;">
+                        </div>
                     </div>
-                    
+
+                    <div class="form-group">
+                        <label for="password" class="form-label" style="color: #374151 !important; font-weight: 600;">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Enter your password" required
+                                   style="color: #1f2937 !important; background-color: #ffffff !important; border: 2px solid #e5e7eb;">
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-sign-in-alt"></i> Login
+                        <i class="fas fa-sign-in-alt"></i>
+                        Sign In
                     </button>
                 </form>
-                
-                <div class="text-center mt-3">
-                    <p>Don't have an account? <a href="{{ url_for('register') }}">Register as Student</a></p>
-                </div>
-                
-                <div class="alert alert-info mt-3">
-                    <small>
-                        <strong>Demo Credentials:</strong><br>
-                        Admin: admin / admin123<br>
-                        (Register as student to create a student account)
-                    </small>
+
+                <div class="login-footer text-center">
+                    <p>Don't have an account? 
+                        <a href="{{ url_for('register') }}" class="text-primary">Sign up here</a>
+                    </p>
+                    <p>
+                        <a href="{{ url_for('index') }}" class="text-muted">
+                            <i class="fas fa-arrow-left"></i> Back to Home
+                        </a>
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.login-card {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    padding: var(--space-8);
+    margin: var(--space-8) 0;
+    border: 1px solid rgba(var(--primary-rgb), 0.1);
+}
+
+.login-header {
+    margin-bottom: var(--space-6);
+}
+
+.login-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto var(--space-4);
+}
+
+.login-header h2 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+}
+
+.demo-info {
+    background: var(--bg-light);
+    border: 1px solid rgba(var(--primary-rgb), 0.1);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.demo-info h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+}
+
+.demo-info code {
+    background: var(--white);
+    color: var(--primary-color);
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+}
+
+.login-form {
+    margin-bottom: var(--space-6);
+}
+
+.form-group {
+    margin-bottom: var(--space-4);
+}
+
+.form-label {
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: var(--space-2);
+}
+
+.input-group-text {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.form-control {
+    border: 1px solid var(--border-color);
+    padding: var(--space-3);
+    font-size: var(--text-base);
+    color: var(--text-primary);
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border: none;
+    padding: var(--space-3) var(--space-6);
+    font-weight: 600;
+    border-radius: var(--radius-lg);
+    transition: var(--transition-smooth);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.login-footer a {
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}
+
+.alert {
+    border: none;
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.alert-danger {
+    background: rgba(var(--danger-rgb), 0.1);
+    color: var(--danger-color);
+}
+
+.alert-success {
+    background: rgba(var(--success-rgb), 0.1);
+    color: var(--success-color);
+}
+
+.alert-info {
+    background: rgba(var(--info-rgb), 0.1);
+    color: var(--info-color);
+}
+
+@media (max-width: 768px) {
+    .login-card {
+        margin: var(--space-4) 0;
+        padding: var(--space-6);
+    }
+    
+    .login-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Password toggle functionality
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+    
+    if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            const icon = this.querySelector('i');
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        });
+    }
+    
+    // Auto-fill demo accounts
+    const demoButtons = document.querySelectorAll('.demo-info code');
+    demoButtons.forEach(code => {
+        code.style.cursor = 'pointer';
+        code.addEventListener('click', function() {
+            const text = this.textContent;
+            if (text === 'student' || text === 'admin') {
+                document.getElementById('username').value = text;
+                document.getElementById('password').value = text === 'student' ? 'student123' : 'admin123';
+            }
+        });
+    });
+    
+    // Form validation
+    const form = document.querySelector('.login-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                e.preventDefault();
+                showAlert('Please fill in all fields', 'error');
+            }
+        });
+    }
+});
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        <i class="fas fa-exclamation-triangle"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const form = document.querySelector('.login-form');
+    form.parentNode.insertBefore(alertDiv, form);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
 {% endblock %}

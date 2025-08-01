@@ -373,22 +373,36 @@ Student    Web App     Database     Admin       Kitchen
 
 ### Installation Steps:
 
-#### Option 1: Automated Setup (Windows)
-```batch
+#### Option 1: Automated Setup (Linux/Mac)
+```bash
+# Make scripts executable
+chmod +x setup.sh start_app.sh
+
 # Run the setup script
-setup.bat
+./setup.sh
 
 # Start the application
-start_app.bat
+./start_app.sh
 ```
 
-#### Option 2: Manual Setup
+#### Option 2: Automated Setup (Windows)
+```batch
+# Run the setup script
+setup_windows.bat
+
+# Start the application
+start_app_windows.bat
+```
+
+#### Option 3: Manual Setup
 ```bash
 # Install dependencies
-pip install flask
+pip install flask requests
 
-# Initialize database
-python setup.py
+# Initialize database (run setup script or manual)
+python -c "exec(open('setup_windows.bat').read())" # Windows
+# OR
+bash setup.sh # Linux/Mac
 
 # Start application
 python app.py
@@ -397,17 +411,19 @@ python app.py
 ### Access Information:
 - **URL**: http://localhost:5000
 - **Admin Login**: Username: `admin`, Password: `admin123`
-- **Student**: Register a new account
+- **Student**: Username: `student`, Password: `student123`
 
-### Default Features Available:
-✅ User authentication (fixed)  
-✅ Menu rating system  
-✅ Order placement (KOT-style)  
-✅ Order status tracking  
-✅ Monthly billing  
-✅ Admin order management  
-✅ Analytics dashboard  
-✅ Responsive design  
+### Features Available After Setup:
+✅ User authentication with demo accounts  
+✅ Complete menu rating system  
+✅ Advanced order placement (KOT-style)  
+✅ Real-time order status tracking  
+✅ Monthly billing and payment tracking  
+✅ Comprehensive admin order management  
+✅ Analytics dashboard with charts  
+✅ Fully responsive mobile design  
+✅ Reviews and rating system  
+✅ **Perfect text visibility** - all content readable!  
 
 ---
 
@@ -492,6 +508,6 @@ The application is ready for production use and can be easily customized for you
 
 ---
 
-*Last Updated: July 26, 2025*  
-*Version: 2.0.0 - Enhanced with Complete Order Management*  
+*Last Updated: August 1, 2025*  
+*Version: 3.0.0 - Complete Redesign with Perfect Text Visibility*  
 *Built with ❤️ for better food experiences*

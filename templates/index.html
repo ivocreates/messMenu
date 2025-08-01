@@ -3,333 +3,433 @@
 {% block title %}Home - Mess Menu Rater{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h2">
-                <i class="fas fa-calendar-day"></i> Today's Menu
-                <small class="text-muted">{{ today }}</small>
-            </h1>
+<div class="container">
+    <!-- Hero Section -->
+    <div class="dashboard-header fade-in" style="color: #1e293b !important;">
+        <h1 style="color: #1e293b !important; font-weight: 700;"><i class="fas fa-utensils"></i> Welcome to Mess Menu Rater</h1>
+        <p class="lead" style="color: #64748b !important; font-weight: 500;">Discover, rate, and order delicious food from your mess menu</p>
+        {% if not session.get('user_id') %}
+            <div class="mt-4">
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-3">
+                    <i class="fas fa-user-plus"></i> Get Started
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if not session.get('user_id') %}
+        <!-- Demo Account Information -->
+        <div class="demo-accounts slide-in-left" style="background: #f8fafc !important; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 8px;">
+            <h6 style="color: #1e293b !important; font-weight: 700;"><i class="fas fa-user-check"></i> Demo Accounts Available</h6>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <strong style="color: #1e293b !important;"><i class="fas fa-user-graduate"></i> Student Account:</strong><br>
+                    <span style="color: #475569 !important;">Username: <code style="background: #e2e8f0; color: #1e293b; padding: 2px 6px; border-radius: 4px;">student</code><br>
+                    Password: <code style="background: #e2e8f0; color: #1e293b; padding: 2px 6px; border-radius: 4px;">student123</code></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <strong style="color: #1e293b !important;"><i class="fas fa-user-shield"></i> Admin Account:</strong><br>
+                    <span style="color: #475569 !important;">Username: <code style="background: #e2e8f0; color: #1e293b; padding: 2px 6px; border-radius: 4px;">admin</code><br>
+                    Password: <code style="background: #e2e8f0; color: #1e293b; padding: 2px 6px; border-radius: 4px;">admin123</code></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Overview -->
+        <div class="features-grid slide-in-right">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card text-center" style="background: rgba(255, 255, 255, 0.95); padding: 2rem; border-radius: 15px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);">
+                        <div class="feature-icon" style="color: #2563eb !important; font-size: 2rem; margin-bottom: 1rem;">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h5 style="color: #1e293b !important; font-weight: 700; margin-bottom: 0.5rem;">Rate & Review</h5>
+                        <p style="color: #64748b !important; font-weight: 500;">Share your experience and help improve food quality</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center" style="background: rgba(255, 255, 255, 0.95); padding: 2rem; border-radius: 15px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);">
+                        <div class="feature-icon" style="color: #2563eb !important; font-size: 2rem; margin-bottom: 1rem;">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h5 style="color: #1e293b !important; font-weight: 700; margin-bottom: 0.5rem;">Easy Ordering</h5>
+                        <p style="color: #64748b !important; font-weight: 500;">Order your favorite meals with just a few clicks</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center" style="background: rgba(255, 255, 255, 0.95); padding: 2rem; border-radius: 15px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);">
+                        <div class="feature-icon" style="color: #2563eb !important; font-size: 2rem; margin-bottom: 1rem;">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h5 style="color: #1e293b !important; font-weight: 700; margin-bottom: 0.5rem;">Track Orders</h5>
+                        <p style="color: #64748b !important; font-weight: 500;">Monitor your order status and meal history</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Overview -->
+        <div class="stats-grid slide-in-up" style="background: #f8fafc; padding: 3rem 0; margin: 3rem 0; border-radius: 15px;">
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card stat-primary" style="background: rgba(255, 255, 255, 0.95); padding: 2rem; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);">
+                        <div class="stat-icon" style="color: #2563eb; font-size: 2.5rem; margin-bottom: 1rem;">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 style="color: #1e293b !important; font-weight: 800; font-size: 2.5rem; margin-bottom: 0.5rem;">{{ total_menu_items or '50+' }}</h3>
+                            <p style="color: #64748b !important; font-weight: 600; margin: 0;">Menu Items</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card stat-success" style="background: rgba(255, 255, 255, 0.95); padding: 2rem; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);">
+                        <div class="stat-icon" style="color: #059669; font-size: 2.5rem; margin-bottom: 1rem;">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 style="color: #1e293b !important; font-weight: 800; font-size: 2.5rem; margin-bottom: 0.5rem;">{{ total_students or '200+' }}</h3>
+                            <p style="color: #64748b !important; font-weight: 600; margin: 0;">Active Students</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card stat-warning" style="background: rgba(255, 255, 255, 0.95); padding: 2rem; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);">
+                        <div class="stat-icon" style="color: #d97706; font-size: 2.5rem; margin-bottom: 1rem;">
+                            <i class="fas fa-shopping-bag"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 style="color: #1e293b !important; font-weight: 800; font-size: 2.5rem; margin-bottom: 0.5rem;">{{ total_orders or '1000+' }}</h3>
+                            <p style="color: #64748b !important; font-weight: 600; margin: 0;">Orders Served</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card stat-info" style="background: rgba(255, 255, 255, 0.95); padding: 2rem; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);">
+                        <div class="stat-icon" style="color: #0891b2; font-size: 2.5rem; margin-bottom: 1rem;">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 style="color: #1e293b !important; font-weight: 800; font-size: 2.5rem; margin-bottom: 0.5rem;">4.5</h3>
+                            <p style="color: #64748b !important; font-weight: 600; margin: 0;">Average Rating</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="cta-section text-center slide-in-up">
+            <div class="cta-content">
+                <h3>Ready to get started?</h3>
+                <p class="lead">Join hundreds of students who rate and order their meals with ease</p>
+                <div class="cta-buttons">
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-user-plus"></i> Sign Up Now
+                    </a>
+                    <a href="{{ url_for('menu') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-eye"></i> View Menu
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Logged in user content -->
+        <div class="user-dashboard slide-in-up">
+            <div class="welcome-message">
+                <h3>Welcome back, {{ session.get('full_name', 'User') }}!</h3>
+                <p class="lead">What would you like to eat today?</p>
+            </div>
+
             {% if session.user_type == 'student' %}
-            <div class="text-muted">
-                <i class="fas fa-star text-warning"></i> Rate items to help improve our food quality!
+            <!-- Student Quick Actions -->
+            <div class="quick-actions">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <a href="{{ url_for('menu') }}" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-utensils"></i>
+                            </div>
+                            <h5>Browse Menu</h5>
+                            <p>Explore today's delicious offerings</p>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('my_orders') }}" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-receipt"></i>
+                            </div>
+                            <h5>My Orders</h5>
+                            <p>Track your recent orders</p>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('billing') }}" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <h5>Billing</h5>
+                            <p>View your meal expenses</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% elif session.user_type == 'admin' %}
+            <!-- Admin Quick Actions -->
+            <div class="admin-actions">
+                <div class="row g-4">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('admin_dashboard') }}" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
+                            <h5>Dashboard</h5>
+                            <p>System overview</p>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('admin_orders') }}" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <h5>Manage Orders</h5>
+                            <p>Process orders</p>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('analytics') }}" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <h5>Analytics</h5>
+                            <p>View reports</p>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('menu') }}" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <h5>Manage Menu</h5>
+                            <p>Update items</p>
+                        </a>
+                    </div>
+                </div>
             </div>
             {% endif %}
         </div>
-    </div>
-</div>
-
-{% if menu_items %}
-    <!-- Group menu items by meal type -->
-    {% set meal_types = {'breakfast': 'Breakfast', 'lunch': 'Lunch', 'dinner': 'Dinner', 'snacks': 'Snacks'} %}
-    
-    {% for meal_type, meal_label in meal_types.items() %}
-        {% set meal_items = menu_items|selectattr('meal_type', 'equalto', meal_type)|list %}
-        {% if meal_items %}
-        <div class="row mb-4">
-            <div class="col-12">
-                <h3 class="h4 mb-3">
-                    <i class="fas fa-utensils text-primary"></i> {{ meal_label }}
-                </h3>
-                <div class="row">
-                    {% for item in meal_items %}
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card h-100 menu-item-card">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ item.item_name }}</h5>
-                                <p class="card-text text-muted">{{ item.description or 'No description available' }}</p>
-                                
-                                <!-- Price -->
-                                <div class="mb-2">
-                                    <span class="badge bg-success">₹{{ "%.2f"|format(item.price) }}</span>
-                                </div>
-                                
-                                <!-- Rating Display -->
-                                <div class="rating-display mb-3">
-                                    <div class="stars">
-                                        {% for i in range(1, 6) %}
-                                        <i class="fas fa-star {% if i <= item.avg_rating %}text-warning{% else %}text-muted{% endif %}"></i>
-                                        {% endfor %}
-                                    </div>
-                                    <small class="text-muted">
-                                        {{ "%.1f"|format(item.avg_rating) }}/5 
-                                        ({{ item.rating_count }} {% if item.rating_count == 1 %}rating{% else %}ratings{% endif %})
-                                    </small>
-                                </div>
-                                
-                                {% if session.user_type == 'student' %}
-                                <!-- Rating Form -->
-                                <div class="rating-form">
-                                    <label class="form-label small">Rate this item:</label>
-                                    <div class="rating-stars mb-2" data-item-id="{{ item.id }}">
-                                        {% for i in range(1, 6) %}
-                                        <i class="fas fa-star rating-star" data-rating="{{ i }}"></i>
-                                        {% endfor %}
-                                    </div>
-                                    <textarea class="form-control form-control-sm mb-2" 
-                                             placeholder="Optional comment..." 
-                                             id="comment-{{ item.id }}" 
-                                             rows="2"></textarea>
-                                    <button class="btn btn-primary btn-sm submit-rating" 
-                                           data-item-id="{{ item.id }}">
-                                        <i class="fas fa-paper-plane"></i> Submit Rating
-                                    </button>
-                                </div>
-                                {% endif %}
-                                
-                                {% if session.user_type == 'student' %}
-                                <!-- Order Button -->
-                                <div class="mt-2">
-                                    <button class="btn btn-outline-success btn-sm add-to-order" 
-                                           data-item-id="{{ item.id }}" 
-                                           data-item-name="{{ item.item_name }}" 
-                                           data-price="{{ item.price }}">
-                                        <i class="fas fa-plus"></i> Add to Order
-                                    </button>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-    {% endfor %}
-    
-    {% if session.user_type == 'student' %}
-    <!-- Order Summary -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card d-none" id="order-summary">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-shopping-cart"></i> Your Order
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div id="order-items"></div>
-                    <hr>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <strong>Total: ₹<span id="order-total">0.00</span></strong>
-                        <div>
-                            <button class="btn btn-outline-secondary me-2" id="clear-order">
-                                <i class="fas fa-trash"></i> Clear
-                            </button>
-                            <button class="btn btn-success" id="place-order">
-                                <i class="fas fa-check"></i> Place Order
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
     {% endif %}
-    
-{% else %}
-    <div class="row">
-        <div class="col-12">
-            <div class="alert alert-info text-center">
-                <i class="fas fa-info-circle"></i>
-                No menu items available for today. 
-                {% if session.user_type == 'admin' %}
-                <a href="{{ url_for('admin_dashboard') }}" class="alert-link">Add some items</a> to get started.
-                {% else %}
-                Please check back later.
-                {% endif %}
-            </div>
-        </div>
-    </div>
-{% endif %}
-
+</div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_css %}
+<style>
+.dashboard-header {
+    text-align: center;
+    padding: 3rem 0;
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--secondary-rgb), 0.1));
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-8);
+}
+
+.demo-accounts {
+    background: var(--white);
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--space-8);
+    border: 1px solid rgba(var(--primary-rgb), 0.1);
+}
+
+.features-grid {
+    margin-bottom: var(--space-8);
+}
+
+.feature-card {
+    background: var(--white);
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(var(--primary-rgb), 0.1);
+    transition: var(--transition-smooth);
+    height: 100%;
+}
+
+.feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.feature-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-full);
+    background: rgba(var(--primary-rgb), 0.15);
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto var(--space-4);
+}
+
+.stats-grid {
+    margin-bottom: var(--space-8);
+}
+
+.cta-section {
+    padding: 4rem 0;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border-radius: var(--radius-lg);
+    color: var(--white);
+    margin-bottom: var(--space-8);
+}
+
+.cta-buttons {
+    margin-top: var(--space-6);
+}
+
+.user-dashboard {
+    margin-bottom: var(--space-8);
+}
+
+.welcome-message {
+    text-align: center;
+    padding: 2rem 0;
+    margin-bottom: var(--space-6);
+}
+
+.quick-actions, .admin-actions {
+    margin-bottom: var(--space-8);
+}
+
+.action-card {
+    display: block;
+    background: var(--white);
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(var(--primary-rgb), 0.1);
+    transition: var(--transition-smooth);
+    text-decoration: none;
+    color: inherit;
+    text-align: center;
+    height: 100%;
+}
+
+.action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    text-decoration: none;
+    color: inherit;
+}
+
+.action-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-full);
+    background: rgba(var(--primary-rgb), 0.15);
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto var(--space-4);
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 1s ease-in;
+}
+
+.slide-in-left {
+    animation: slideInLeft 1s ease-out;
+}
+
+.slide-in-right {
+    animation: slideInRight 1s ease-out;
+}
+
+.slide-in-up {
+    animation: slideInUp 1s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(-100px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-header {
+        padding: 2rem 1rem;
+    }
+    
+    .cta-section {
+        padding: 2rem 1rem;
+    }
+    
+    .cta-buttons .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: var(--space-2);
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
 <script>
-// Rating functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Rating stars interaction
-    const ratingStars = document.querySelectorAll('.rating-stars');
-    
-    ratingStars.forEach(starsContainer => {
-        const stars = starsContainer.querySelectorAll('.rating-star');
-        let selectedRating = 0;
-        
-        stars.forEach((star, index) => {
-            star.addEventListener('mouseenter', () => {
-                highlightStars(stars, index + 1);
-            });
-            
-            star.addEventListener('mouseleave', () => {
-                highlightStars(stars, selectedRating);
-            });
-            
-            star.addEventListener('click', () => {
-                selectedRating = index + 1;
-                highlightStars(stars, selectedRating);
-                starsContainer.dataset.selectedRating = selectedRating;
-            });
-        });
+    // Add staggered animation to feature cards
+    const featureCards = document.querySelectorAll('.feature-card');
+    featureCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.2}s`;
     });
     
-    // Submit rating
-    document.querySelectorAll('.submit-rating').forEach(button => {
-        button.addEventListener('click', function() {
-            const itemId = this.dataset.itemId;
-            const starsContainer = document.querySelector(`.rating-stars[data-item-id="${itemId}"]`);
-            const rating = starsContainer.dataset.selectedRating;
-            const comment = document.getElementById(`comment-${itemId}`).value;
-            
-            if (!rating) {
-                alert('Please select a rating!');
-                return;
-            }
-            
-            submitRating(itemId, rating, comment);
-        });
+    // Add staggered animation to stat cards
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
     });
     
-    // Order functionality
-    let orderItems = [];
-    
-    document.querySelectorAll('.add-to-order').forEach(button => {
-        button.addEventListener('click', function() {
-            const itemId = this.dataset.itemId;
-            const itemName = this.dataset.itemName;
-            const price = parseFloat(this.dataset.price);
-            
-            addToOrder(itemId, itemName, price);
-        });
+    // Add staggered animation to action cards
+    const actionCards = document.querySelectorAll('.action-card');
+    actionCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
     });
     
-    document.getElementById('clear-order')?.addEventListener('click', clearOrder);
-    document.getElementById('place-order')?.addEventListener('click', placeOrder);
-    
-    function highlightStars(stars, rating) {
-        stars.forEach((star, index) => {
-            if (index < rating) {
-                star.classList.add('text-warning');
-                star.classList.remove('text-muted');
-            } else {
-                star.classList.add('text-muted');
-                star.classList.remove('text-warning');
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
             }
         });
-    }
-    
-    function submitRating(itemId, rating, comment) {
-        fetch('/rate_item', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                menu_item_id: itemId,
-                rating: rating,
-                comment: comment
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload(); // Reload to show updated ratings
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while submitting your rating.');
-        });
-    }
-    
-    function addToOrder(itemId, itemName, price) {
-        const existingItem = orderItems.find(item => item.id === itemId);
-        
-        if (existingItem) {
-            existingItem.quantity += 1;
-        } else {
-            orderItems.push({
-                id: itemId,
-                name: itemName,
-                price: price,
-                quantity: 1
-            });
-        }
-        
-        updateOrderDisplay();
-    }
-    
-    function updateOrderDisplay() {
-        const orderSummary = document.getElementById('order-summary');
-        const orderItemsContainer = document.getElementById('order-items');
-        const orderTotal = document.getElementById('order-total');
-        
-        if (orderItems.length === 0) {
-            orderSummary.style.display = 'none';
-            return;
-        }
-        
-        orderSummary.style.display = 'block';
-        
-        let html = '';
-        let total = 0;
-        
-        orderItems.forEach(item => {
-            const itemTotal = item.price * item.quantity;
-            total += itemTotal;
-            
-            html += `
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div>
-                        <strong>${item.name}</strong><br>
-                        <small>₹${item.price.toFixed(2)} × ${item.quantity}</small>
-                    </div>
-                    <div>
-                        <span class="me-2">₹${itemTotal.toFixed(2)}</span>
-                        <button class="btn btn-sm btn-outline-danger" 
-                               onclick="removeFromOrder('${item.id}')">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        });
-        
-        orderItemsContainer.innerHTML = html;
-        orderTotal.textContent = total.toFixed(2);
-    }
-    
-    window.removeFromOrder = function(itemId) {
-        const itemIndex = orderItems.findIndex(item => item.id === itemId);
-        if (itemIndex > -1) {
-            if (orderItems[itemIndex].quantity > 1) {
-                orderItems[itemIndex].quantity -= 1;
-            } else {
-                orderItems.splice(itemIndex, 1);
-            }
-            updateOrderDisplay();
-        }
-    };
-    
-    function clearOrder() {
-        orderItems = [];
-        updateOrderDisplay();
-    }
-    
-    function placeOrder() {
-        if (orderItems.length === 0) {
-            alert('Your order is empty!');
-            return;
-        }
-        
-        // Here you would typically send the order to the server
-        alert('Order placed successfully! (Feature in development)');
-        clearOrder();
-    }
+    });
 });
 </script>
 {% endblock %}

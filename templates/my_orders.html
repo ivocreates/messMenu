@@ -3,72 +3,282 @@
 {% block title %}My Orders - Mess Menu Rater{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="glass-card p-4 fade-in">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2><i class="fas fa-receipt"></i> My Orders</h2>
-                    <a href="{{ url_for('billing') }}" class="btn btn-success">
-                        <i class="fas fa-file-invoice-dollar"></i> View Billing
-                    </a>
-                </div>
+<div class="container">
+    <!-- Header -->
+    <div class="dashboard-header fade-in">
+        <h1><i class="fas fa-receipt"></i> My Orders</h1>
+        <p class="lead">Track your order history and status</p>
+    </div>
 
-                {% if orders %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Date</th>
-                                <th>Items</th>
-                                <th>Total Amount</th>
-                                <th>Status</th>
-                                <th>Ordered At</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for order in orders %}
-                            <tr class="slide-up">
-                                <td><strong>#{{ order[0] }}</strong></td>
-                                <td>{{ order[1] }}</td>
-                                <td>
-                                    <small class="text-muted">{{ order[5] if order[5] else 'No items' }}</small>
-                                </td>
-                                <td><strong>₹{{ "%.2f"|format(order[2]) }}</strong></td>
-                                <td>
-                                    <span class="status-badge status-{{ order[3] }}">
-                                        {% if order[3] == 'pending' %}
-                                            <i class="fas fa-clock"></i> Pending
-                                        {% elif order[3] == 'preparing' %}
-                                            <i class="fas fa-utensils"></i> Preparing
-                                        {% elif order[3] == 'ready' %}
-                                            <i class="fas fa-bell"></i> Ready
-                                        {% elif order[3] == 'served' %}
-                                            <i class="fas fa-check-circle"></i> Served
-                                        {% elif order[3] == 'cancelled' %}
-                                            <i class="fas fa-times-circle"></i> Cancelled
-                                        {% endif %}
-                                    </span>
-                                </td>
-                                <td><small>{{ order[4] }}</small></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                    <h4>No Orders Yet</h4>
-                    <p class="text-muted">Start by placing your first order!</p>
-                    <a href="{{ url_for('index') }}" class="btn btn-primary">
-                        <i class="fas fa-utensils"></i> Browse Menu
-                    </a>
-                </div>
-                {% endif %}
+    <!-- Orders Filter -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="btn-group" role="group" aria-label="Order status filter">
+                <button type="button" class="btn btn-outline-primary active" data-status="all">All Orders</button>
+                <button type="button" class="btn btn-outline-primary" data-status="pending">Pending</button>
+                <button type="button" class="btn btn-outline-primary" data-status="completed">Completed</button>
+                <button type="button" class="btn btn-outline-primary" data-status="cancelled">Cancelled</button>
+            </div>
+        </div>
+        <div class="col-md-6 text-end">
+            <div class="d-flex justify-content-end align-items-center">
+                <span class="me-3">
+                    <strong>Total Orders:</strong> {{ orders|length if orders else 0 }}
+                </span>
+                <a href="{{ url_for('menu') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Order
+                </a>
             </div>
         </div>
     </div>
+
+    <!-- Orders List -->
+    <div class="row">
+        {% if orders %}
+            {% for order in orders %}
+                <div class="col-12 mb-4 order-item" data-status="{{ order.status if order.status else 'pending' }}">
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <h5 class="mb-1">Order #{{ order.id if order.id else order[0] }}</h5>
+                                    <small class="text-muted">{{ order.created_at if order.created_at else order[4] }}</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <span class="status-badge status-{{ order.status if order.status else order[3] }}">
+                                        {% set status = order.status if order.status else order[3] %}
+                                        {% if status == 'pending' %}
+                                            <i class="fas fa-clock"></i> Pending
+                                        {% elif status == 'completed' or status == 'served' %}
+                                            <i class="fas fa-check-circle"></i> Completed
+                                        {% elif status == 'cancelled' %}
+                                            <i class="fas fa-times-circle"></i> Cancelled
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <strong class="price">₹{{ "%.2f"|format(order.total_amount if order.total_amount else order[2]) }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ order.items|length if order.items else '1' }} item(s)</small>
+                                </div>
+                                <div class="col-md-3 text-end">
+                                    <button class="btn btn-outline-primary btn-sm toggle-details" data-order-id="{{ order.id if order.id else order[0] }}">
+                                        <i class="fas fa-chevron-down"></i> Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="order-details" id="details-{{ order.id if order.id else order[0] }}" style="display: none;">
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h6><i class="fas fa-utensils"></i> Order Items:</h6>
+                                    <div class="order-items">
+                                        {% if order.items %}
+                                            {% for item in order.items %}
+                                                <div class="order-item-row">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>{{ item.menu_item.name }}</strong>
+                                                            <br>
+                                                            <small class="text-muted">{{ item.menu_item.description[:50] }}...</small>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <span class="quantity">Qty: {{ item.quantity }}</span>
+                                                            <br>
+                                                            <span class="item-price">₹{{ "%.2f"|format(item.price * item.quantity) }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="order-item-row">
+                                                <p class="text-muted">{{ order[5] if order[5] else 'Order details not available' }}</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="order-summary-box">
+                                        <h6><i class="fas fa-calculator"></i> Order Summary</h6>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Subtotal:</span>
+                                            <span>₹{{ "%.2f"|format((order.total_amount if order.total_amount else order[2]) * 0.9) }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Tax (10%):</span>
+                                            <span>₹{{ "%.2f"|format((order.total_amount if order.total_amount else order[2]) * 0.1) }}</span>
+                                        </div>
+                                        <hr>
+                                        <div class="d-flex justify-content-between total-row">
+                                            <strong>Total:</strong>
+                                            <strong>₹{{ "%.2f"|format(order.total_amount if order.total_amount else order[2]) }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="empty-state">
+                    <i class="fas fa-receipt fa-4x text-muted mb-3"></i>
+                    <h4>No Orders Yet</h4>
+                    <p class="text-muted mb-4">You haven't placed any orders yet. Start by exploring our menu!</p>
+                    <a href="{{ url_for('menu') }}" class="btn btn-primary">
+                        <i class="fas fa-utensils"></i> Browse Menu
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.order-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-4);
+    transition: var(--transition-smooth);
+    border: 1px solid rgba(var(--primary-rgb), 0.1);
+}
+
+.order-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.status-badge {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.status-pending {
+    background: rgba(251, 191, 36, 0.15);
+    color: #B45309;
+}
+
+.status-completed, .status-served {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--success-color);
+}
+
+.status-cancelled {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger-color);
+}
+
+.order-details {
+    margin-top: var(--space-4);
+}
+
+.order-item-row {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--bg-light);
+    margin-bottom: var(--space-3);
+    border-left: 4px solid var(--accent-color);
+}
+
+.order-summary-box {
+    background: var(--white);
+    border: 1px solid rgba(var(--primary-rgb), 0.1);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+}
+
+.total-row {
+    font-size: 1.1rem;
+    padding-top: var(--space-2);
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--space-8);
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-group .btn.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--white);
+}
+
+.toggle-details .fa-chevron-down {
+    transition: var(--transition-smooth);
+}
+
+.toggle-details.expanded .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+@media (max-width: 768px) {
+    .order-header .col-md-3 {
+        margin-bottom: var(--space-3);
+    }
+    
+    .btn-group {
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        flex: 1;
+        font-size: var(--text-sm);
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Order filtering
+    document.querySelectorAll('[data-status]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const status = this.dataset.status;
+            
+            // Update active button
+            document.querySelectorAll('[data-status]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter orders
+            document.querySelectorAll('.order-item').forEach(order => {
+                if (status === 'all' || order.dataset.status === status) {
+                    order.style.display = 'block';
+                } else {
+                    order.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    // Toggle order details
+    document.querySelectorAll('.toggle-details').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const orderId = this.dataset.orderId;
+            const details = document.getElementById(`details-${orderId}`);
+            
+            if (details.style.display === 'none') {
+                details.style.display = 'block';
+                this.classList.add('expanded');
+                this.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Details';
+            } else {
+                details.style.display = 'none';
+                this.classList.remove('expanded');
+                this.innerHTML = '<i class="fas fa-chevron-down"></i> Details';
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

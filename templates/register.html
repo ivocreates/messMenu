@@ -3,44 +3,354 @@
 {% block title %}Register - Mess Menu Rater{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card">
-            <div class="card-header text-center">
-                <h4><i class="fas fa-user-plus"></i> Student Registration</h4>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card fade-in">
+                <div class="card-header text-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </h3>
+                    <p class="text-muted mt-2">Join our community today</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="registerForm" novalidate>
+                        <div class="form-floating mb-3">
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="username" 
+                                   name="username" 
+                                   placeholder="Username"
+                                   value="{{ request.form.username or '' }}"
+                                   required>
+                            <label for="username">
+                                <i class="fas fa-user"></i> Username
+                            </label>
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="email" 
+                                   name="email" 
+                                   placeholder="Email"
+                                   value="{{ request.form.email or '' }}"
+                                   required>
+                            <label for="email">
+                                <i class="fas fa-envelope"></i> Email
+                            </label>
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="full_name" 
+                                   name="full_name" 
+                                   placeholder="Full Name"
+                                   value="{{ request.form.full_name or '' }}"
+                                   required>
+                            <label for="full_name">
+                                <i class="fas fa-id-card"></i> Full Name
+                            </label>
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password" 
+                                   placeholder="Password"
+                                   required>
+                            <label for="password">
+                                <i class="fas fa-lock"></i> Password
+                            </label>
+                            <div class="invalid-feedback"></div>
+                            <div class="form-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Password must be at least 6 characters long
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="form-floating mb-4">
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="confirm_password" 
+                                   name="confirm_password" 
+                                   placeholder="Confirm Password"
+                                   required>
+                            <label for="confirm_password">
+                                <i class="fas fa-lock"></i> Confirm Password
+                            </label>
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   id="agree_terms" 
+                                   name="agree_terms"
+                                   required>
+                            <label class="form-check-label" for="agree_terms">
+                                I agree to the <a href="#" class="text-primary">Terms of Service</a> and <a href="#" class="text-primary">Privacy Policy</a>
+                            </label>
+                            <div class="invalid-feedback">
+                                You must agree to the terms and conditions
+                            </div>
+                        </div>
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus"></i> Create Account
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="text-center">
+                        <p class="text-muted">
+                            Already have an account? 
+                            <a href="{{ url_for('login') }}" class="text-primary text-decoration-none">
+                                <i class="fas fa-sign-in-alt"></i> Sign in here
+                            </a>
+                        </p>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="full_name" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+
+            <!-- Features Preview -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="card-title">
+                                <i class="fas fa-star text-warning"></i> What you'll get
+                            </h6>
+                            <div class="row">
+                                <div class="col-4">
+                                    <i class="fas fa-utensils text-primary"></i>
+                                    <br><small>Browse Menu</small>
+                                </div>
+                                <div class="col-4">
+                                    <i class="fas fa-shopping-cart text-success"></i>
+                                    <br><small>Order Food</small>
+                                </div>
+                                <div class="col-4">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <br><small>Rate & Review</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="student_id" class="form-label">Student ID</label>
-                        <input type="text" class="form-control" id="student_id" name="student_id" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-success w-100">
-                        <i class="fas fa-user-plus"></i> Register
-                    </button>
-                </form>
-                
-                <div class="text-center mt-3">
-                    <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registerForm');
+    const inputs = {
+        username: document.getElementById('username'),
+        email: document.getElementById('email'),
+        full_name: document.getElementById('full_name'),
+        password: document.getElementById('password'),
+        confirm_password: document.getElementById('confirm_password'),
+        agree_terms: document.getElementById('agree_terms')
+    };
+
+    // Real-time validation
+    Object.keys(inputs).forEach(key => {
+        const input = inputs[key];
+        if (input.type !== 'checkbox') {
+            input.addEventListener('blur', () => validateField(key));
+            input.addEventListener('input', () => clearError(input));
+        }
+    });
+
+    // Password confirmation validation
+    inputs.confirm_password.addEventListener('input', function() {
+        if (this.value && inputs.password.value) {
+            if (this.value !== inputs.password.value) {
+                showError(this, 'Passwords do not match');
+            } else {
+                clearError(this);
+            }
+        }
+    });
+
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+
+        // Validate all fields
+        Object.keys(inputs).forEach(key => {
+            if (!validateField(key)) {
+                isValid = false;
+            }
+        });
+
+        if (!isValid) {
+            e.preventDefault();
+            // Focus on first invalid field
+            const firstInvalid = form.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.focus();
+            }
+        } else {
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+            submitBtn.disabled = true;
+        }
+    });
+
+    function validateField(fieldName) {
+        const input = inputs[fieldName];
+        clearError(input);
+
+        switch (fieldName) {
+            case 'username':
+                if (!input.value.trim()) {
+                    showError(input, 'Username is required');
+                    return false;
+                } else if (input.value.trim().length < 3) {
+                    showError(input, 'Username must be at least 3 characters');
+                    return false;
+                } else if (!/^[a-zA-Z0-9_]+$/.test(input.value.trim())) {
+                    showError(input, 'Username can only contain letters, numbers, and underscores');
+                    return false;
+                }
+                break;
+
+            case 'email':
+                if (!input.value.trim()) {
+                    showError(input, 'Email is required');
+                    return false;
+                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value.trim())) {
+                    showError(input, 'Please enter a valid email address');
+                    return false;
+                }
+                break;
+
+            case 'full_name':
+                if (!input.value.trim()) {
+                    showError(input, 'Full name is required');
+                    return false;
+                } else if (input.value.trim().length < 2) {
+                    showError(input, 'Full name must be at least 2 characters');
+                    return false;
+                }
+                break;
+
+            case 'password':
+                if (!input.value) {
+                    showError(input, 'Password is required');
+                    return false;
+                } else if (input.value.length < 6) {
+                    showError(input, 'Password must be at least 6 characters');
+                    return false;
+                } else if (!/^(?=.*[a-zA-Z])(?=.*\d)/.test(input.value)) {
+                    showError(input, 'Password must contain at least one letter and one number');
+                    return false;
+                }
+                // Revalidate confirm password if it has a value
+                if (inputs.confirm_password.value) {
+                    validateField('confirm_password');
+                }
+                break;
+
+            case 'confirm_password':
+                if (!input.value) {
+                    showError(input, 'Please confirm your password');
+                    return false;
+                } else if (input.value !== inputs.password.value) {
+                    showError(input, 'Passwords do not match');
+                    return false;
+                }
+                break;
+
+            case 'agree_terms':
+                if (!input.checked) {
+                    showError(input, 'You must agree to the terms and conditions');
+                    return false;
+                }
+                break;
+        }
+
+        return true;
+    }
+
+    function showError(input, message) {
+        input.classList.add('is-invalid');
+        const feedback = input.parentNode.querySelector('.invalid-feedback') || 
+                        input.nextElementSibling;
+        if (feedback && feedback.classList.contains('invalid-feedback')) {
+            feedback.textContent = message;
+        }
+    }
+
+    function clearError(input) {
+        input.classList.remove('is-invalid');
+        const feedback = input.parentNode.querySelector('.invalid-feedback') || 
+                        input.nextElementSibling;
+        if (feedback && feedback.classList.contains('invalid-feedback')) {
+            feedback.textContent = '';
+        }
+    }
+
+    // Auto-focus on username field
+    inputs.username.focus();
+
+    // Generate username from full name
+    inputs.full_name.addEventListener('input', function() {
+        if (!inputs.username.value && this.value) {
+            const suggestion = this.value.toLowerCase()
+                .replace(/[^a-zA-Z0-9\s]/g, '')
+                .replace(/\s+/g, '_')
+                .substring(0, 20);
+            inputs.username.placeholder = `Suggestion: ${suggestion}`;
+        }
+    });
+
+    // Password strength indicator
+    inputs.password.addEventListener('input', function() {
+        const strength = calculatePasswordStrength(this.value);
+        updatePasswordStrength(strength);
+    });
+
+    function calculatePasswordStrength(password) {
+        let score = 0;
+        if (password.length >= 6) score++;
+        if (password.length >= 8) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/\d/.test(password)) score++;
+        if (/[^a-zA-Z\d]/.test(password)) score++;
+        return score;
+    }
+
+    function updatePasswordStrength(score) {
+        const indicator = document.querySelector('.password-strength') || createPasswordStrengthIndicator();
+        const labels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+        const colors = ['#e74c3c', '#f39c12', '#f1c40f', '#2ecc71', '#27ae60', '#16a085'];
+        
+        indicator.textContent = `Strength: ${labels[score] || 'Very Weak'}`;
+        indicator.style.color = colors[score] || colors[0];
+    }
+
+    function createPasswordStrengthIndicator() {
+        const indicator = document.createElement('small');
+        indicator.className = 'password-strength text-muted d-block mt-1';
+        inputs.password.parentNode.querySelector('.form-text').appendChild(indicator);
+        return indicator;
+    }
+});
+</script>
 {% endblock %}

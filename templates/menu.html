@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}Menu - Mess Menu Rater{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="dashboard-header fade-in">
+        <h1><i class="fas fa-utensils"></i> Today's Menu</h1>
+        <p class="lead">Discover delicious meals and rate your favorites</p>
+    </div>
+
+    <!-- Menu Items -->
+    <div class="row">
+        {% if menu_items %}
+            {% for item in menu_items %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="menu-item" data-item-id="{{ item.id }}">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="mb-0">{{ item.name }}</h5>
+                            <span class="price">₹{{ "%.2f"|format(item.price) }}</span>
+                        </div>
+                        
+                        <p class="description">{{ item.description }}</p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge badge-secondary">{{ item.category }}</span>
+                            <div class="rating">
+                                {% if item.avg_rating %}
+                                    {% for i in range(5) %}
+                                        <i class="fas fa-star {% if i < item.avg_rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                    {% endfor %}
+                                    <small class="text-muted">({{ item.rating_count }})</small>
+                                {% else %}
+                                    <small class="text-muted">No ratings yet</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- User Rating -->
+                        <div class="rating-section">
+                            <h6>Your Rating:</h6>
+                            <div class="rating-stars" data-item-id="{{ item.id }}">
+                                {% for i in range(1, 6) %}
+                                    <i class="fas fa-star star {% if user_ratings.get(item.id) and i <= user_ratings[item.id] %}active{% endif %}" 
+                                       data-rating="{{ i }}"></i>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted">Click stars to rate</small>
+                        </div>
+                        
+                        <!-- Order Button -->
+                        <div class="mt-3">
+                            <button class="btn btn-primary btn-sm order-btn" data-item-id="{{ item.id }}" data-price="{{ item.price }}">
+                                <i class="fas fa-shopping-cart"></i> Add to Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-utensils fa-3x text-muted mb-3"></i>
+                        <h4>No Menu Items Available</h4>
+                        <p class="text-muted">Check back later for today's menu.</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Order Summary (Fixed Bottom) -->
+    <div id="orderSummary" class="order-summary" style="display: none;">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-0">
+                        <i class="fas fa-shopping-cart"></i> 
+                        <span id="orderCount">0</span> items in order
+                    </h6>
+                    <small class="text-muted">Total: ₹<span id="orderTotal">0.00</span></small>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-success me-2" id="placeOrderBtn">
+                        <i class="fas fa-check"></i> Place Order
+                    </button>
+                    <button class="btn btn-outline-secondary" id="clearOrderBtn">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rating Modal -->
+<div class="modal fade" id="ratingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-star"></i> Rate Item
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="ratingForm">
+                    <input type="hidden" id="modalItemId">
+                    <div class="mb-3">
+                        <label class="form-label">Rating:</label>
+                        <div class="rating-stars" id="modalRatingStars">
+                            {% for i in range(1, 6) %}
+                                <i class="fas fa-star star" data-rating="{{ i }}"></i>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ratingComment" class="form-label">Comment (optional):</label>
+                        <textarea class="form-control" id="ratingComment" rows="3" placeholder="Share your thoughts about this item..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitRatingBtn">
+                    <i class="fas fa-star"></i> Submit Rating
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.order-summary {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border-top: 2px solid var(--primary-color);
+    box-shadow: var(--shadow-xl);
+    padding: var(--space-4);
+    z-index: var(--z-sticky);
+}
+
+.rating-stars .star {
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    margin-right: var(--space-1);
+}
+
+.rating-stars .star:hover,
+.rating-stars .star.hover {
+    color: #FBBF24 !important;
+    transform: scale(1.1);
+}
+
+.modal .rating-stars .star {
+    font-size: 1.5rem;
+}
+
+.order-btn.added {
+    background: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.order-btn.added:hover {
+    background: #059669;
+    border-color: #059669;
+}
+
+@media (max-width: 768px) {
+    .order-summary {
+        padding: var(--space-3);
+    }
+    
+    .order-summary .btn {
+        padding: var(--space-2) var(--space-3);
+        font-size: var(--text-sm);
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let orderItems = new Map();
+    const orderSummary = document.getElementById('orderSummary');
+    const orderCountEl = document.getElementById('orderCount');
+    const orderTotalEl = document.getElementById('orderTotal');
+    
+    // Rating functionality
+    document.querySelectorAll('.rating-stars .star').forEach(star => {
+        star.addEventListener('click', function() {
+            const itemId = this.closest('.rating-stars').dataset.itemId;
+            const rating = parseInt(this.dataset.rating);
+            
+            // Update visual feedback
+            updateStarRating(this.closest('.rating-stars'), rating);
+            
+            // Submit rating
+            submitRating(itemId, rating);
+        });
+        
+        // Hover effect
+        star.addEventListener('mouseenter', function() {
+            const rating = parseInt(this.dataset.rating);
+            const stars = this.closest('.rating-stars').querySelectorAll('.star');
+            
+            stars.forEach((s, index) => {
+                if (index < rating) {
+                    s.classList.add('hover');
+                } else {
+                    s.classList.remove('hover');
+                }
+            });
+        });
+        
+        star.addEventListener('mouseleave', function() {
+            this.closest('.rating-stars').querySelectorAll('.star').forEach(s => {
+                s.classList.remove('hover');
+            });
+        });
+    });
+    
+    // Order functionality
+    document.querySelectorAll('.order-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const itemId = this.dataset.itemId;
+            const price = parseFloat(this.dataset.price);
+            const itemName = this.closest('.menu-item').querySelector('h5').textContent;
+            
+            if (orderItems.has(itemId)) {
+                // Remove from order
+                orderItems.delete(itemId);
+                this.classList.remove('added');
+                this.innerHTML = '<i class="fas fa-shopping-cart"></i> Add to Order';
+            } else {
+                // Add to order
+                orderItems.set(itemId, {
+                    name: itemName,
+                    price: price,
+                    quantity: 1
+                });
+                this.classList.add('added');
+                this.innerHTML = '<i class="fas fa-check"></i> Added';
+            }
+            
+            updateOrderSummary();
+        });
+    });
+    
+    // Place order
+    document.getElementById('placeOrderBtn').addEventListener('click', function() {
+        if (orderItems.size === 0) {
+            alert('Please add items to your order first.');
+            return;
+        }
+        
+        const items = Array.from(orderItems.entries()).map(([id, item]) => ({
+            id: id,
+            quantity: item.quantity
+        }));
+        
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Placing Order...';
+        this.disabled = true;
+        
+        fetch('/place_order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ items: items })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Clear order
+                orderItems.clear();
+                updateOrderSummary();
+                
+                // Reset all buttons
+                document.querySelectorAll('.order-btn').forEach(btn => {
+                    btn.classList.remove('added');
+                    btn.innerHTML = '<i class="fas fa-shopping-cart"></i> Add to Order';
+                });
+                
+                // Show success message
+                showAlert('Order placed successfully!', 'success');
+            } else {
+                showAlert(data.message || 'Error placing order', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error placing order. Please try again.', 'danger');
+        })
+        .finally(() => {
+            this.innerHTML = '<i class="fas fa-check"></i> Place Order';
+            this.disabled = false;
+        });
+    });
+    
+    // Clear order
+    document.getElementById('clearOrderBtn').addEventListener('click', function() {
+        orderItems.clear();
+        updateOrderSummary();
+        
+        // Reset all buttons
+        document.querySelectorAll('.order-btn').forEach(btn => {
+            btn.classList.remove('added');
+            btn.innerHTML = '<i class="fas fa-shopping-cart"></i> Add to Order';
+        });
+    });
+    
+    function updateStarRating(container, rating) {
+        const stars = container.querySelectorAll('.star');
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+    }
+    
+    function submitRating(itemId, rating, comment = '') {
+        fetch('/rate_item', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                menu_item_id: itemId,
+                rating: rating,
+                comment: comment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Rating saved successfully!', 'success');
+            } else {
+                showAlert(data.message || 'Error saving rating', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error saving rating. Please try again.', 'danger');
+        });
+    }
+    
+    function updateOrderSummary() {
+        const itemCount = orderItems.size;
+        const total = Array.from(orderItems.values()).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        orderCountEl.textContent = itemCount;
+        orderTotalEl.textContent = total.toFixed(2);
+        
+        if (itemCount > 0) {
+            orderSummary.style.display = 'block';
+            document.body.style.paddingBottom = '80px';
+        } else {
+            orderSummary.style.display = 'none';
+            document.body.style.paddingBottom = '0';
+        }
+    }
+    
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.container');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}
