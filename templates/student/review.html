@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_dashboard') }}">
+                            <i class="fas fa-home me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_menu') }}">
+                            <i class="fas fa-utensils me-2"></i>Menu
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_reviews') }}">
+                            <i class="fas fa-star me-2"></i>My Reviews
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_orders') }}">
+                            <i class="fas fa-shopping-cart me-2"></i>My Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_bills') }}">
+                            <i class="fas fa-receipt me-2"></i>Bills
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_profile') }}">
+                            <i class="fas fa-user-edit me-2"></i>Profile
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Rate & Review: {{ item.name }}</h1>
+                <a href="{{ url_for('student_menu') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Menu
+                </a>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-star me-2"></i>{{ 'Update' if existing_review else 'Add' }} Review</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <h6>{{ item.name }}</h6>
+                                <p class="text-muted">{{ item.description }}</p>
+                                <p><strong>Price: ₹{{ "%.2f"|format(item.price) }}</strong></p>
+                            </div>
+
+                            <form method="POST">
+                                <div class="mb-3">
+                                    <label class="form-label">Rating</label>
+                                    <div class="rating-input">
+                                        {% for i in range(1, 6) %}
+                                        <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}" 
+                                               {% if existing_review and existing_review.rating == i %}checked{% endif %} required>
+                                        <label for="star{{ i }}" class="star-label">
+                                            <i class="fas fa-star"></i>
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="comment" class="form-label">Comment (Optional)</label>
+                                    <textarea class="form-control" id="comment" name="comment" rows="4" 
+                                              placeholder="Share your experience with this dish...">{% if existing_review %}{{ existing_review.comment }}{% endif %}</textarea>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-star me-2"></i>{{ 'Update' if existing_review else 'Submit' }} Review
+                                    </button>
+                                    <a href="{{ url_for('student_menu') }}" class="btn btn-outline-secondary">Cancel</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.rating-input input[type="radio"] {
+    display: none;
+}
+
+.star-label {
+    font-size: 2rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.rating-input input[type="radio"]:checked ~ .star-label,
+.rating-input .star-label:hover,
+.rating-input .star-label:hover ~ .star-label {
+    color: #ffc107;
+}
+
+.rating-input input[type="radio"]:checked ~ .star-label {
+    color: #ffc107;
+}
+</style>
+{% endblock %}

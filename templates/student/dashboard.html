@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('student_dashboard') }}">
+                            <i class="fas fa-home me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_menu') }}">
+                            <i class="fas fa-utensils me-2"></i>Menu
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_reviews') }}">
+                            <i class="fas fa-star me-2"></i>My Reviews
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_orders') }}">
+                            <i class="fas fa-shopping-cart me-2"></i>My Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_bills') }}">
+                            <i class="fas fa-receipt me-2"></i>Bills
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_profile') }}">
+                            <i class="fas fa-user-edit me-2"></i>Profile
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Student Dashboard</h1>
+            </div>
+
+            <!-- Today's Menu -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar-day me-2"></i>Today's Menu</h5>
+                </div>
+                <div class="card-body">
+                    {% if daily_items %}
+                        <div class="row" id="menu-items">
+                            {% for item in daily_items %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card menu-item-card h-100 position-relative">
+                                    <div class="price-tag">₹{{ "%.2f"|format(item.price) }}</div>
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ item.name }}</h6>
+                                        <p class="card-text text-muted">{{ item.description }}</p>
+                                        <div class="rating-stars mb-2">
+                                            {% for i in range(1, 6) %}
+                                                {% if i <= item.avg_rating %}
+                                                    <i class="fas fa-star"></i>
+                                                {% else %}
+                                                    <i class="far fa-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                            <small class="text-muted">({{ item.review_count }} reviews)</small>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <a href="{{ url_for('add_review', item_id=item.menu_item_id) }}" class="btn btn-sm btn-outline-warning">
+                                                <i class="fas fa-star me-1"></i>Review
+                                            </a>
+                                            <div class="quantity-controls">
+                                                <button class="btn btn-sm btn-outline-secondary" onclick="decreaseQuantity({{ item.menu_item_id }})">-</button>
+                                                <span class="mx-2 quantity" id="qty-{{ item.menu_item_id }}">0</span>
+                                                <button class="btn btn-sm btn-outline-secondary" onclick="increaseQuantity({{ item.menu_item_id }})">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <button class="btn btn-primary btn-lg" id="place-order-btn" onclick="placeOrder()" disabled>
+                                <i class="fas fa-shopping-cart me-2"></i>Place Order
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No items in today's menu.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock me-2"></i>Recent Orders</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in recent_orders %}
+                                    <tr>
+                                        <td>#{{ order.id }}</td>
+                                        <td>₹{{ "%.2f"|format(order.total_amount) }}</td>
+                                        <td>
+                                            {% if order.status == 'pending' %}
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            {% elif order.status == 'preparing' %}
+                                                <span class="badge bg-info">Preparing</span>
+                                            {% elif order.status == 'ready' %}
+                                                <span class="badge bg-primary">Ready</span>
+                                            {% elif order.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Cancelled</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ order.created_at.split(' ')[0] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No recent orders.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let orderItems = {};
+
+function increaseQuantity(itemId) {
+    if (!orderItems[itemId]) {
+        orderItems[itemId] = 0;
+    }
+    orderItems[itemId]++;
+    updateQuantityDisplay(itemId);
+    updateOrderButton();
+}
+
+function decreaseQuantity(itemId) {
+    if (orderItems[itemId] && orderItems[itemId] > 0) {
+        orderItems[itemId]--;
+        if (orderItems[itemId] === 0) {
+            delete orderItems[itemId];
+        }
+        updateQuantityDisplay(itemId);
+        updateOrderButton();
+    }
+}
+
+function updateQuantityDisplay(itemId) {
+    const qtyElement = document.getElementById('qty-' + itemId);
+    qtyElement.textContent = orderItems[itemId] || 0;
+}
+
+function updateOrderButton() {
+    const hasItems = Object.keys(orderItems).length > 0;
+    const orderBtn = document.getElementById('place-order-btn');
+    orderBtn.disabled = !hasItems;
+}
+
+function placeOrder() {
+    const items = [];
+    for (const [itemId, quantity] of Object.entries(orderItems)) {
+        items.push({
+            id: parseInt(itemId),
+            quantity: quantity
+        });
+    }
+
+    fetch('/student/order', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items: items })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Order placed successfully! Order ID: #' + data.order_id);
+            // Reset order
+            orderItems = {};
+            document.querySelectorAll('.quantity').forEach(el => el.textContent = '0');
+            updateOrderButton();
+        } else {
+            alert('Error placing order: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error placing order. Please try again.');
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_dashboard') }}">
+                            <i class="fas fa-home me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_menu') }}">
+                            <i class="fas fa-utensils me-2"></i>Menu
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_reviews') }}">
+                            <i class="fas fa-star me-2"></i>My Reviews
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('student_orders') }}">
+                            <i class="fas fa-shopping-cart me-2"></i>My Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('student_bills') }}">
+                            <i class="fas fa-receipt me-2"></i>Bills
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">My Bills</h1>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-calendar-week fa-2x text-primary mb-2"></i>
+                            <h4>Weekly Total</h4>
+                            <h3 class="text-primary">₹{{ "%.2f"|format(weekly_total) }}</h3>
+                            <small class="text-muted">Last 7 days</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-calendar-alt fa-2x text-success mb-2"></i>
+                            <h4>Monthly Total</h4>
+                            <h3 class="text-success">₹{{ "%.2f"|format(monthly_total) }}</h3>
+                            <small class="text-muted">Last 30 days</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bill Tabs -->
+            <ul class="nav nav-tabs" id="billTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="weekly-tab" data-bs-toggle="tab" data-bs-target="#weekly" type="button" role="tab">
+                        <i class="fas fa-calendar-week me-2"></i>Weekly Bills
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab">
+                        <i class="fas fa-calendar-alt me-2"></i>Monthly Bills
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="billTabsContent">
+                <!-- Weekly Bills Tab -->
+                <div class="tab-pane fade show active" id="weekly" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-calendar-week me-2"></i>Weekly Bills (Last 7 days)</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if weekly_orders %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Order ID</th>
+                                                <th>Amount</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for order in weekly_orders %}
+                                            <tr>
+                                                <td>#{{ order.id }}</td>
+                                                <td>₹{{ "%.2f"|format(order.total_amount) }}</td>
+                                                <td>{{ order.created_at.split(' ')[0] }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="table-info">
+                                                <th>Total</th>
+                                                <th>₹{{ "%.2f"|format(weekly_total) }}</th>
+                                                <th></th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No completed orders in the last 7 days.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Bills Tab -->
+                <div class="tab-pane fade" id="monthly" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-calendar-alt me-2"></i>Monthly Bills (Last 30 days)</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if monthly_orders %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Order ID</th>
+                                                <th>Amount</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for order in monthly_orders %}
+                                            <tr>
+                                                <td>#{{ order.id }}</td>
+                                                <td>₹{{ "%.2f"|format(order.total_amount) }}</td>
+                                                <td>{{ order.created_at.split(' ')[0] }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="table-info">
+                                                <th>Total</th>
+                                                <th>₹{{ "%.2f"|format(monthly_total) }}</th>
+                                                <th></th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No completed orders in the last 30 days.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

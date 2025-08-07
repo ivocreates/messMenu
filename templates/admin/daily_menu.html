@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_menu') }}">
+                            <i class="fas fa-utensils me-2"></i>Menu Management
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('daily_menu') }}">
+                            <i class="fas fa-calendar-day me-2"></i>Daily Menu
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_orders') }}">
+                            <i class="fas fa-shopping-cart me-2"></i>Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_students') }}">
+                            <i class="fas fa-users me-2"></i>Students
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_bills') }}">
+                            <i class="fas fa-receipt me-2"></i>Bills
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_profile') }}">
+                            <i class="fas fa-user-edit me-2"></i>Profile
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Daily Menu - {{ today }}</h1>
+            </div>
+
+            <!-- Add Item to Daily Menu -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-plus me-2"></i>Add Item to Daily Menu</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('add_daily_menu_item') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="menu_item_id" class="form-label">Select Menu Item</label>
+                                <select class="form-select" id="menu_item_id" name="menu_item_id" required>
+                                    <option value="">Choose an item...</option>
+                                    {% for item in all_items %}
+                                    <option value="{{ item.id }}">{{ item.name }} - ₹{{ "%.2f"|format(item.price) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="date" class="form-label">Date</label>
+                                <input type="date" class="form-control" id="date" name="date" value="{{ today }}" required>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-plus me-1"></i>Add
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Today's Menu Items -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list me-2"></i>Today's Menu Items</h5>
+                </div>
+                <div class="card-body">
+                    {% if daily_items %}
+                        <div class="row">
+                            {% for item in daily_items %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ item.name }}</h6>
+                                        <p class="card-text text-muted">{{ item.description }}</p>
+                                        <p class="card-text">
+                                            <strong>₹{{ "%.2f"|format(item.price) }}</strong>
+                                        </p>
+                                        <div class="text-center">
+                                            <a href="{{ url_for('delete_daily_menu_item', daily_id=item.id) }}" 
+                                               class="btn btn-sm btn-danger"
+                                               onclick="return confirm('Remove this item from today\'s menu?')">
+                                                <i class="fas fa-trash"></i> Remove
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No items added to today's menu yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

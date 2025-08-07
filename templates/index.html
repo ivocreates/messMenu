@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-4">Welcome to MessMenu Rater</h1>
+            <p class="lead mb-5">Rate your favorite mess dishes, place orders, and manage your meal experience like never before!</p>
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="d-grid gap-3">
+                        <a href="{{ url_for('login') }}" class="btn btn-light btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login to Your Account
+                        </a>
+                        <a href="{{ url_for('register') }}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Create New Account
+                        </a>
+                        <a href="{{ url_for('public_today_menu') }}" class="btn btn-warning btn-lg">
+                            <i class="fas fa-calendar-day me-2"></i>View Today's Menu
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                    <h4 class="card-title">Rate & Review</h4>
+                    <p class="card-text">Share your experience and help fellow students discover the best dishes in the mess.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-shopping-cart fa-3x text-primary mb-3"></i>
+                    <h4 class="card-title">Easy Ordering</h4>
+                    <p class="card-text">Browse daily menu and place orders conveniently. Track your order status in real-time.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
+                    <h4 class="card-title">Bill Management</h4>
+                    <p class="card-text">Keep track of your weekly and monthly expenses with detailed billing information.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row align-items-center">
+        <div class="col-lg-6">
+            <h2 class="fw-bold mb-4">For Students</h2>
+            <ul class="list-unstyled">
+                <li class="mb-3">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    Rate and review mess items
+                </li>
+                <li class="mb-3">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    Browse daily menu with ratings
+                </li>
+                <li class="mb-3">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    Place orders easily
+                </li>
+                <li class="mb-3">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    Track order status
+                </li>
+                <li class="mb-3">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    View weekly/monthly bills
+                </li>
+            </ul>
+        </div>
+        <div class="col-lg-6">
+            <h2 class="fw-bold mb-4">For Administrators</h2>
+            <ul class="list-unstyled">
+                <li class="mb-3">
+                    <i class="fas fa-check-circle text-primary me-2"></i>
+                    Manage menu items (CRUD operations)
+                </li>
+                <li class="mb-3">
+                    <i class="fas fa-check-circle text-primary me-2"></i>
+                    Set daily menu
+                </li>
+                <li class="mb-3">
+                    <i class="fas fa-check-circle text-primary me-2"></i>
+                    Manage orders and update status
+                </li>
+                <li class="mb-3">
+                    <i class="fas fa-check-circle text-primary me-2"></i>
+                    Analytics dashboard
+                </li>
+                <li class="mb-3">
+                    <i class="fas fa-check-circle text-primary me-2"></i>
+                    Student bill management
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
