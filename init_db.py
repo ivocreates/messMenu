@@ -76,6 +76,7 @@ def init_database():
         student_id INTEGER NOT NULL,
         total_amount REAL NOT NULL,
         status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'preparing', 'ready', 'completed', 'cancelled')),
+        cleared BOOLEAN DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (student_id) REFERENCES students (id)
     )
@@ -134,6 +135,18 @@ def init_database():
     ''', ('student', student_password, 'student@messmenu.com', 'Test Student'))
     
     conn.commit()
+    
+    # Add cleared column to orders table if it doesn't exist
+    try:
+        cursor.execute('ALTER TABLE orders ADD COLUMN cleared BOOLEAN DEFAULT 0')
+        conn.commit()
+        print("Added 'cleared' column to orders table")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e):
+            print("'cleared' column already exists in orders table")
+        else:
+            raise e
+    
     conn.close()
     print("Database initialized successfully!")
     print("Default admin login: username='admin', password='admin123'")

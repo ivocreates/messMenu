@@ -292,7 +292,7 @@ def admin_bills():
     bills = conn.execute('''
         SELECT s.id as student_id, s.full_name, s.username, COALESCE(SUM(o.total_amount),0) as total
         FROM students s
-        LEFT JOIN orders o ON s.id = o.student_id AND o.status = "completed"
+        LEFT JOIN orders o ON s.id = o.student_id AND o.status = "completed" AND o.cleared = 0
         GROUP BY s.id
         ORDER BY total DESC
     ''').fetchall()
@@ -304,7 +304,7 @@ def admin_bills():
 @admin_required
 def clear_student_bill(student_id):
     conn = get_db_connection()
-    conn.execute('UPDATE orders SET status = "cleared" WHERE student_id = ? AND status = "completed"', (student_id,))
+    conn.execute('UPDATE orders SET cleared = 1 WHERE student_id = ? AND status = "completed"', (student_id,))
     conn.commit()
     conn.close()
     flash('Student bill cleared!', 'success')
@@ -509,7 +509,7 @@ def student_bills():
     week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
     weekly_orders = conn.execute('''
         SELECT * FROM orders 
-        WHERE student_id = ? AND created_at >= ? AND status = 'completed'
+        WHERE student_id = ? AND created_at >= ? AND status = 'completed' AND cleared = 0
         ORDER BY created_at DESC
     ''', (session['user_id'], week_ago)).fetchall()
     
@@ -517,7 +517,7 @@ def student_bills():
     month_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
     monthly_orders = conn.execute('''
         SELECT * FROM orders 
-        WHERE student_id = ? AND created_at >= ? AND status = 'completed'
+        WHERE student_id = ? AND created_at >= ? AND status = 'completed' AND cleared = 0
         ORDER BY created_at DESC
     ''', (session['user_id'], month_ago)).fetchall()
     
@@ -531,9 +531,6 @@ def student_bills():
                          monthly_orders=monthly_orders,
                          weekly_total=weekly_total,
                          monthly_total=monthly_total)
-
-if __name__ == '__main__':
-    app.run(host=app.config['HOST'], port=app.config['PORT'], debug=app.config['DEBUG'])
 
 # Admin profile update
 @app.route('/admin/profile', methods=['GET', 'POST'])
@@ -555,3 +552,6 @@ def admin_profile():
         admin = conn.execute('SELECT * FROM admins WHERE id = ?', (session['user_id'],)).fetchone()
     conn.close()
     return render_template('admin/profile.html', admin=admin)
+
+if __name__ == '__main__':
+    app.run(host=app.config['HOST'], port=app.config['PORT'], debug=app.config['DEBUG'])
