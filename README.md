@@ -6,17 +6,29 @@ A comprehensive web application for mess management that allows students to rate
 
 ### For Students
 - **Menu Rating & Reviews**: Rate and review mess items with 5-star rating system
-- **Order Management**: Browse daily menu and place orders
+- **Order Management**: Browse daily menu and place orders with live shopping cart
+- **Real-time Cart**: Add items to cart with live bill calculation
 - **Order Tracking**: Real-time order status tracking
 - **Bill Management**: View weekly and monthly billing summaries
+- **Profile Management**: Update personal information and credentials
 - **User Dashboard**: Personalized dashboard with recent activities
 
 ### For Administrators
-- **Menu Management**: Complete CRUD operations for menu items
+- **Menu Management**: Complete CRUD operations for menu items with image support
+- **Image Upload**: Upload food images from computer or use URLs
 - **Daily Menu Setup**: Set and manage daily menu offerings
 - **Order Management**: View and update order statuses
+- **Advanced Bill Management**: Detailed bill view, edit, delete, and clear operations
+- **Student Management**: View registered students and their details
 - **Analytics Dashboard**: Comprehensive statistics and insights
-- **Student Bill Management**: Monitor and manage student expenses
+- **Profile Management**: Update admin credentials and information
+
+### New Features Added
+- **Home Page**: Display today's menu for all visitors (no login required)
+- **Password Confirmation**: Enhanced registration with password confirmation
+- **Image Support**: Upload food images from computer or use image URLs
+- **Live Cart**: Real-time shopping cart with instant bill calculation
+- **Enhanced Bills**: Comprehensive bill management for both students and admins
 
 ## Technology Stack
 

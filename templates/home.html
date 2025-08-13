@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}MessMenu - Home{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Hero Section -->
+    <div class="jumbotron bg-primary text-white text-center py-5 mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container">
+            <h1 class="display-4 fw-bold">Welcome to MessMenu</h1>
+            <p class="lead">Your digital mess companion for delicious meals and easy ordering</p>
+            <div class="mt-4">
+                <a href="{{ url_for('login') }}" class="btn btn-light btn-lg me-3">Login</a>
+                <a href="{{ url_for('register') }}" class="btn btn-outline-light btn-lg">Register</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Menu Section -->
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h2 class="text-center mb-4"><i class="fas fa-utensils me-2"></i>Today's Menu</h2>
+                
+                {% if daily_menu %}
+                <div class="row">
+                    {% for item in daily_menu %}
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            {% if item.image_url %}
+                            <img src="{% if item.image_url.startswith('http') %}{{ item.image_url }}{% else %}/static/{{ item.image_url }}{% endif %}" class="card-img-top" alt="{{ item.name }}" style="height: 200px; object-fit: cover;">
+                            {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-utensils fa-3x text-muted"></i>
+                            </div>
+                            {% endif %}
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">{{ item.name }}</h5>
+                                <p class="card-text text-muted">{{ item.description or 'Delicious and fresh!' }}</p>
+                                <div class="mt-auto">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-secondary">{{ item.category }}</span>
+                                        <h5 class="text-primary mb-0">₹{{ "%.2f"|format(item.price) }}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No items in today's menu</h4>
+                    <p class="text-muted">Check back later for delicious updates!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Call to Action -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card bg-light">
+                    <div class="card-body text-center py-4">
+                        <h4>Ready to Order?</h4>
+                        <p class="mb-3">Join MessMenu today and enjoy hassle-free meal ordering!</p>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Get Started</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

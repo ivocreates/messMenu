@@ -5,9 +5,52 @@ import hashlib
 import os
 from functools import wraps
 from config import config
+from werkzeug.utils import secure_filename
+import uuid
 
 app = Flask(__name__)
 app.config.from_object(config)
+
+# File upload configuration
+UPLOAD_FOLDER = 'static/uploads/images'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Create upload directory if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Helper functions for file upload
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def save_uploaded_file(file):
+    """Save uploaded file and return the relative path"""
+    if file and allowed_file(file.filename):
+        # Generate unique filename
+        file_extension = file.filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{uuid.uuid4()}.{file_extension}"
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        
+        try:
+            file.save(file_path)
+            # Return relative path for storing in database
+            return f"uploads/images/{unique_filename}"
+        except Exception as e:
+            print(f"Error saving file: {e}")
+            return None
+    return None
+
+def delete_uploaded_file(file_path):
+    """Delete uploaded file from filesystem"""
+    if file_path and file_path.startswith('uploads/images/'):
+        full_path = os.path.join('static', file_path)
+        try:
+            if os.path.exists(full_path):
+                os.remove(full_path)
+        except Exception as e:
+            print(f"Error deleting file: {e}")
 
 # Database configuration
 DATABASE = app.config['DATABASE']
@@ -42,7 +85,20 @@ def index():
             return redirect(url_for('admin_dashboard'))
         else:
             return redirect(url_for('student_dashboard'))
-    return render_template('index.html')
+    
+    # Get today's menu for home page
+    conn = get_db_connection()
+    today = datetime.now().strftime('%Y-%m-%d')
+    daily_menu = conn.execute('''
+        SELECT mi.*, dm.date 
+        FROM daily_menu dm 
+        JOIN menu_items mi ON dm.menu_item_id = mi.id 
+        WHERE dm.date = ? AND mi.available = 1
+        ORDER BY mi.category, mi.name
+    ''', (today,)).fetchall()
+    conn.close()
+    
+    return render_template('home.html', daily_menu=daily_menu)
 
 # Public route: today's menu (no login required)
 @app.route('/menu/today')
@@ -97,8 +153,19 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        confirm_password = request.form['confirm_password']
         email = request.form['email']
         full_name = request.form['full_name']
+        
+        # Validate password confirmation
+        if password != confirm_password:
+            flash('Passwords do not match!', 'error')
+            return render_template('register.html')
+        
+        # Validate password length
+        if len(password) < 6:
+            flash('Password must be at least 6 characters long!', 'error')
+            return render_template('register.html')
         
         # Hash password
         password_hash = hashlib.sha256(password.encode()).hexdigest()
@@ -111,7 +178,7 @@ def register():
             flash('Registration successful! Please login.', 'success')
             return redirect(url_for('login'))
         except sqlite3.IntegrityError:
-            flash('Username already exists', 'error')
+            flash('Username or email already exists', 'error')
         finally:
             conn.close()
     
@@ -170,9 +237,27 @@ def add_menu_item():
         price = float(request.form['price'])
         category = request.form['category']
         
+        # Handle image upload or URL
+        image_path = None
+        
+        # Check for file upload first
+        if 'image_file' in request.files:
+            file = request.files['image_file']
+            if file.filename:  # File was selected
+                image_path = save_uploaded_file(file)
+                if not image_path:
+                    flash('Error uploading image. Please try again.', 'error')
+                    return render_template('admin/add_menu_item.html')
+        
+        # If no file uploaded, check for URL
+        if not image_path:
+            image_url = request.form.get('image_url', '').strip()
+            if image_url:
+                image_path = image_url
+        
         conn = get_db_connection()
-        conn.execute('INSERT INTO menu_items (name, description, price, category) VALUES (?, ?, ?, ?)',
-                    (name, description, price, category))
+        conn.execute('INSERT INTO menu_items (name, description, price, category, image_url) VALUES (?, ?, ?, ?, ?)',
+                    (name, description, price, category, image_path))
         conn.commit()
         conn.close()
         
@@ -193,10 +278,41 @@ def edit_menu_item(item_id):
         category = request.form['category']
         available = 'available' in request.form
         
+        # Get current item to handle image replacement
+        current_item = conn.execute('SELECT * FROM menu_items WHERE id = ?', (item_id,)).fetchone()
+        current_image = current_item['image_url'] if current_item else None
+        
+        # Handle image upload or URL
+        image_path = current_image  # Keep current image by default
+        
+        # Check for file upload first
+        if 'image_file' in request.files:
+            file = request.files['image_file']
+            if file.filename:  # New file was selected
+                new_image_path = save_uploaded_file(file)
+                if new_image_path:
+                    # Delete old uploaded file if it exists
+                    if current_image and current_image.startswith('uploads/images/'):
+                        delete_uploaded_file(current_image)
+                    image_path = new_image_path
+                else:
+                    flash('Error uploading image. Please try again.', 'error')
+                    conn.close()
+                    return render_template('admin/edit_menu_item.html', item=current_item)
+        
+        # If no file uploaded, check for URL change
+        elif 'image_url' in request.form:
+            new_image_url = request.form.get('image_url', '').strip()
+            if new_image_url != current_image:
+                # Delete old uploaded file if switching to URL
+                if current_image and current_image.startswith('uploads/images/'):
+                    delete_uploaded_file(current_image)
+                image_path = new_image_url
+        
         conn.execute('''UPDATE menu_items 
-                        SET name = ?, description = ?, price = ?, category = ?, available = ?
+                        SET name = ?, description = ?, price = ?, category = ?, image_url = ?, available = ?
                         WHERE id = ?''',
-                    (name, description, price, category, available, item_id))
+                    (name, description, price, category, image_path, available, item_id))
         conn.commit()
         conn.close()
         
@@ -212,9 +328,18 @@ def edit_menu_item(item_id):
 @admin_required
 def delete_menu_item(item_id):
     conn = get_db_connection()
+    
+    # Get the item to delete its image file if needed
+    item = conn.execute('SELECT * FROM menu_items WHERE id = ?', (item_id,)).fetchone()
+    
+    # Delete the menu item
     conn.execute('DELETE FROM menu_items WHERE id = ?', (item_id,))
     conn.commit()
     conn.close()
+    
+    # Delete uploaded image file if it exists
+    if item and item['image_url'] and item['image_url'].startswith('uploads/images/'):
+        delete_uploaded_file(item['image_url'])
     
     flash('Menu item deleted successfully!', 'success')
     return redirect(url_for('admin_menu'))
@@ -310,6 +435,91 @@ def clear_student_bill(student_id):
     flash('Student bill cleared!', 'success')
     return redirect(url_for('admin_bills'))
 
+# Admin: view detailed bill for a student
+@app.route('/admin/bills/view/<int:student_id>')
+@admin_required
+def view_student_bill(student_id):
+    conn = get_db_connection()
+    
+    # Get student info
+    student = conn.execute('SELECT * FROM students WHERE id = ?', (student_id,)).fetchone()
+    
+    # Get all orders for this student
+    orders = conn.execute('''
+        SELECT o.*, 
+               GROUP_CONCAT(mi.name || ' x' || oi.quantity) as items
+        FROM orders o
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
+        WHERE o.student_id = ?
+        GROUP BY o.id
+        ORDER BY o.created_at DESC
+    ''', (student_id,)).fetchall()
+    
+    # Calculate totals
+    total_pending = conn.execute('SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE student_id = ? AND status = "completed" AND cleared = 0', (student_id,)).fetchone()['total']
+    total_cleared = conn.execute('SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE student_id = ? AND cleared = 1', (student_id,)).fetchone()['total']
+    
+    conn.close()
+    
+    return render_template('admin/view_bill.html', 
+                         student=student, 
+                         orders=orders,
+                         total_pending=total_pending,
+                         total_cleared=total_cleared)
+
+# Admin: edit order details
+@app.route('/admin/bills/edit/<int:order_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_order_bill(order_id):
+    conn = get_db_connection()
+    
+    if request.method == 'POST':
+        total_amount = float(request.form['total_amount'])
+        status = request.form['status']
+        
+        conn.execute('UPDATE orders SET total_amount = ?, status = ? WHERE id = ?',
+                    (total_amount, status, order_id))
+        conn.commit()
+        conn.close()
+        
+        flash('Order updated successfully!', 'success')
+        return redirect(url_for('admin_bills'))
+    
+    # Get order details
+    order = conn.execute('''
+        SELECT o.*, s.full_name, s.username,
+               GROUP_CONCAT(mi.name || ' (x' || oi.quantity || ' @ ₹' || oi.price || ')' SEPARATOR ', ') as items
+        FROM orders o
+        JOIN students s ON o.student_id = s.id
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
+        WHERE o.id = ?
+        GROUP BY o.id
+    ''', (order_id,)).fetchone()
+    
+    conn.close()
+    
+    return render_template('admin/edit_bill.html', order=order)
+
+# Admin: delete order
+@app.route('/admin/bills/delete/<int:order_id>', methods=['POST'])
+@admin_required
+def delete_order(order_id):
+    conn = get_db_connection()
+    
+    # Delete order items first
+    conn.execute('DELETE FROM order_items WHERE order_id = ?', (order_id,))
+    
+    # Delete order
+    conn.execute('DELETE FROM orders WHERE id = ?', (order_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    flash('Order deleted successfully!', 'success')
+    return redirect(url_for('admin_bills'))
+
 # Admin view: registered students
 @app.route('/admin/students')
 @admin_required
@@ -401,6 +611,14 @@ def student_menu():
     conn.close()
     
     return render_template('student/menu.html', menu_items=menu_items)
+
+@app.route('/student/cart')
+@login_required
+def shopping_cart():
+    conn = get_db_connection()
+    menu_items = conn.execute('SELECT * FROM menu_items WHERE available = 1 ORDER BY category, name').fetchall()
+    conn.close()
+    return render_template('student/cart.html', menu_items=menu_items)
 
 @app.route('/student/reviews')
 @login_required

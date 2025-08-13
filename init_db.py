@@ -38,6 +38,7 @@ def init_database():
         description TEXT,
         price REAL NOT NULL,
         category TEXT NOT NULL,
+        image_url TEXT,
         available BOOLEAN DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
@@ -144,6 +145,17 @@ def init_database():
     except sqlite3.OperationalError as e:
         if "duplicate column name" in str(e):
             print("'cleared' column already exists in orders table")
+        else:
+            raise e
+    
+    # Add image_url column to menu_items table if it doesn't exist
+    try:
+        cursor.execute('ALTER TABLE menu_items ADD COLUMN image_url TEXT')
+        conn.commit()
+        print("Added 'image_url' column to menu_items table")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e):
+            print("'image_url' column already exists in menu_items table")
         else:
             raise e
     

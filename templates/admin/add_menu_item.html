@@ -47,7 +47,7 @@
                             <h5><i class="fas fa-plus me-2"></i>Add New Menu Item</h5>
                         </div>
                         <div class="card-body">
-                            <form method="POST">
+                            <form method="POST" enctype="multipart/form-data">
                                 <div class="mb-3">
                                     <label for="name" class="form-label">Item Name</label>
                                     <input type="text" class="form-control" id="name" name="name" required>
@@ -74,6 +74,33 @@
                                         <option value="Dessert">Dessert</option>
                                     </select>
                                 </div>
+                                
+                                <!-- Image Upload Section -->
+                                <div class="mb-3">
+                                    <label class="form-label">Food Image</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="image_file" class="form-label">Upload from Computer</label>
+                                            <input type="file" class="form-control" id="image_file" name="image_file" 
+                                                   accept="image/*" onchange="toggleImageInputs('file')">
+                                            <small class="form-text text-muted">
+                                                Supported formats: PNG, JPG, JPEG, GIF, WebP (Max: 16MB)
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="image_url" class="form-label">Or Enter Image URL</label>
+                                            <input type="url" class="form-control" id="image_url" name="image_url" 
+                                                   placeholder="https://example.com/image.jpg" onchange="toggleImageInputs('url')">
+                                            <small class="form-text text-muted">Enter a valid URL for the food image</small>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <div id="image-preview" class="d-none">
+                                            <img id="preview-img" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                                        </div>
+                                    </div>
+                                </div>
+                                </div>
                                 <div class="d-grid gap-2">
                                     <button type="submit" class="btn btn-primary">
                                         <i class="fas fa-plus me-2"></i>Add Item
@@ -88,4 +115,44 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleImageInputs(type) {
+    const fileInput = document.getElementById('image_file');
+    const urlInput = document.getElementById('image_url');
+    const preview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+    
+    if (type === 'file') {
+        // Clear URL input when file is selected
+        if (fileInput.files[0]) {
+            urlInput.value = '';
+            
+            // Show file preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                preview.classList.remove('d-none');
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        }
+    } else if (type === 'url') {
+        // Clear file input when URL is entered
+        if (urlInput.value) {
+            fileInput.value = '';
+            
+            // Show URL preview
+            previewImg.src = urlInput.value;
+            preview.classList.remove('d-none');
+            
+            // Hide preview if image fails to load
+            previewImg.onerror = function() {
+                preview.classList.add('d-none');
+            };
+        } else {
+            preview.classList.add('d-none');
+        }
+    }
+}
+</script>
 {% endblock %}

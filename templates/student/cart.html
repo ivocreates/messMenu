@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    Student Panel
+                </h6>
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('student_dashboard') }}"><i class="fas fa-home me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('student_menu') }}"><i class="fas fa-utensils me-2"></i>Menu</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{{ url_for('shopping_cart') }}"><i class="fas fa-shopping-cart me-2"></i>Cart & Order</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('student_orders') }}"><i class="fas fa-list me-2"></i>My Orders</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('student_reviews') }}"><i class="fas fa-star me-2"></i>Reviews</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('student_bills') }}"><i class="fas fa-receipt me-2"></i>Bills</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('student_profile') }}"><i class="fas fa-user-edit me-2"></i>Profile</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-shopping-cart me-2"></i>Shopping Cart</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{{ url_for('student_menu') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Menu
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Available Items -->
+                <div class="col-lg-8">
+                    <h4 class="mb-3">Available Items</h4>
+                    <div class="row" id="available-items">
+                        {% for item in menu_items %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                {% if item.image_url %}
+                                <img src="{% if item.image_url.startswith('http') %}{{ item.image_url }}{% else %}/static/{{ item.image_url }}{% endif %}" class="card-img-top" alt="{{ item.name }}" style="height: 150px; object-fit: cover;">
+                                {% else %}
+                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                                    <i class="fas fa-utensils fa-2x text-muted"></i>
+                                </div>
+                                {% endif %}
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ item.name }}</h6>
+                                    <p class="card-text small text-muted">{{ item.description }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-secondary">{{ item.category }}</span>
+                                        <h6 class="text-primary mb-0">₹{{ "%.2f"|format(item.price) }}</h6>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="btn btn-primary btn-sm w-100" onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }})">
+                                            <i class="fas fa-plus me-1"></i>Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Shopping Cart -->
+                <div class="col-lg-4">
+                    <div class="card sticky-top">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Your Order</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="cart-items">
+                                <p class="text-muted text-center">Your cart is empty</p>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <strong>Total: </strong>
+                                <strong id="cart-total">₹0.00</strong>
+                            </div>
+                            <button id="place-order-btn" class="btn btn-success w-100 mt-3" onclick="placeOrder()" disabled>
+                                <i class="fas fa-check me-2"></i>Place Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let cart = [];
+
+function addToCart(id, name, price) {
+    const existingItem = cart.find(item => item.id === id);
+    
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({
+            id: id,
+            name: name,
+            price: price,
+            quantity: 1
+        });
+    }
+    
+    updateCartDisplay();
+}
+
+function removeFromCart(id) {
+    cart = cart.filter(item => item.id !== id);
+    updateCartDisplay();
+}
+
+function updateQuantity(id, change) {
+    const item = cart.find(item => item.id === id);
+    if (item) {
+        item.quantity += change;
+        if (item.quantity <= 0) {
+            removeFromCart(id);
+        } else {
+            updateCartDisplay();
+        }
+    }
+}
+
+function updateCartDisplay() {
+    const cartItemsDiv = document.getElementById('cart-items');
+    const cartTotalSpan = document.getElementById('cart-total');
+    const placeOrderBtn = document.getElementById('place-order-btn');
+    
+    if (cart.length === 0) {
+        cartItemsDiv.innerHTML = '<p class="text-muted text-center">Your cart is empty</p>';
+        cartTotalSpan.textContent = '₹0.00';
+        placeOrderBtn.disabled = true;
+        return;
+    }
+    
+    let html = '';
+    let total = 0;
+    
+    cart.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+        
+        html += `
+            <div class="cart-item mb-2 p-2 bg-light rounded">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">${item.name}</h6>
+                        <small class="text-muted">₹${item.price.toFixed(2)} each</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${item.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" onclick="updateQuantity(${item.id}, -1)">-</button>
+                        <span class="btn btn-outline-secondary">${item.quantity}</span>
+                        <button class="btn btn-outline-secondary" onclick="updateQuantity(${item.id}, 1)">+</button>
+                    </div>
+                    <strong>₹${itemTotal.toFixed(2)}</strong>
+                </div>
+            </div>
+        `;
+    });
+    
+    cartItemsDiv.innerHTML = html;
+    cartTotalSpan.textContent = `₹${total.toFixed(2)}`;
+    placeOrderBtn.disabled = false;
+}
+
+function placeOrder() {
+    if (cart.length === 0) {
+        alert('Your cart is empty!');
+        return;
+    }
+    
+    const placeOrderBtn = document.getElementById('place-order-btn');
+    placeOrderBtn.disabled = true;
+    placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Placing Order...';
+    
+    fetch('/student/place_order', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items: cart })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Order placed successfully!');
+            cart = [];
+            updateCartDisplay();
+            window.location.href = '/student/orders';
+        } else {
+            alert('Error placing order: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error placing order');
+    })
+    .finally(() => {
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.innerHTML = '<i class="fas fa-check me-2"></i>Place Order';
+    });
+}
+</script>
+{% endblock %}

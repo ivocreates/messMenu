@@ -66,6 +66,13 @@
                     <div class="col-md-6 col-lg-4 mb-4 menu-item" data-category="{{ item.category }}">
                         <div class="card menu-item-card h-100 position-relative">
                             <div class="price-tag">₹{{ "%.2f"|format(item.price) }}</div>
+                            {% if item.image_url %}
+                            <img src="{{ item.image_url }}" class="card-img-top" alt="{{ item.name }}" style="height: 200px; object-fit: cover;">
+                            {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-utensils fa-3x text-muted"></i>
+                            </div>
+                            {% endif %}
                             <div class="card-body">
                                 <h6 class="card-title">{{ item.name }}</h6>
                                 <p class="card-text text-muted">{{ item.description }}</p>

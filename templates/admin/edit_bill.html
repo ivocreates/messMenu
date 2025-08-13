@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    Admin Panel
+                </h6>
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_dashboard') }}"><i class="fas fa-home me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_menu') }}"><i class="fas fa-utensils me-2"></i>Menu Management</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_daily_menu') }}"><i class="fas fa-calendar-day me-2"></i>Daily Menu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_orders') }}"><i class="fas fa-list me-2"></i>Orders</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{{ url_for('admin_bills') }}"><i class="fas fa-receipt me-2"></i>Bills</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_students') }}"><i class="fas fa-users me-2"></i>Students</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_profile') }}"><i class="fas fa-user-edit me-2"></i>Profile</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-edit me-2"></i>Edit Order #{{ order.id }}</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{{ url_for('admin_bills') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Bills
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Order Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Student:</strong> {{ order.full_name }} ({{ order.username }})</p>
+                            <p><strong>Order Date:</strong> {{ order.created_at }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Items:</strong></p>
+                            <p class="text-muted">{{ order.items or 'No items listed' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="total_amount" class="form-label">Total Amount (₹)</label>
+                                    <input type="number" class="form-control" id="total_amount" name="total_amount" 
+                                           value="{{ order.total_amount }}" step="0.01" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Order Status</label>
+                                    <select class="form-select" id="status" name="status" required>
+                                        <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                        <option value="preparing" {% if order.status == 'preparing' %}selected{% endif %}>Preparing</option>
+                                        <option value="ready" {% if order.status == 'ready' %}selected{% endif %}>Ready</option>
+                                        <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Completed</option>
+                                        <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> Only change the total amount if there was an error in calculation. 
+                            Changing status to "Completed" will make this order appear in student bills.
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('admin_bills') }}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

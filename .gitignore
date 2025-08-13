@@ -18,6 +18,10 @@ var/
 wheels/
 *.egg-info/
 .installed.cfg
+
+# Uploaded files (but keep directory structure)
+static/uploads/images/*
+!static/uploads/images/.gitkeep
 *.egg
 
 # Virtual Environment
@@ -55,8 +59,9 @@ instance/
 .env.test.local
 .env.production.local
 
-# Uploads
-uploads/
+# Uploads (keep directory structure but ignore uploaded files)
+static/uploads/images/*
+!static/uploads/images/.gitkeep
 
 # Temporary files
 tmp/
